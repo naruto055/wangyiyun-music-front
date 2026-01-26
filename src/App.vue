@@ -1,15 +1,13 @@
 <template>
-	<main class="h-screen bg-white dark:bg-black">
-		<h1 class="text-3xl font-bold underline text-black dark:text-white">Hello world!</h1>
-
-		<button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" @click="toggleTheme">ToggleTheme</button>
-	</main>
+  <RouterView />
+  <ToastContainer />
 </template>
 
 <script setup>
-function toggleTheme() {
-	document.documentElement.classList.toggle('dark');
-}
+import ToastContainer from '@/components/ui/toast/ToastContainer.vue'
+// 使用 Vue Router 渲染路由组件
 </script>
 
-<style scoped></style>
+<style scoped>
+/* 全局样式在 main.css 中定义 */
+</style>
