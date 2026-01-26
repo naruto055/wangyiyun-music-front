@@ -2,7 +2,7 @@ module.exports = {
 	printWidth: 150,
 	tabWidth: 2,
 	useTabs: true,
-	semi: true,
+	semi: false,  // 不使用分号
 	singleQuote: true,
 	quoteProps: 'as-needed',
 	jsxSingleQuote: false,

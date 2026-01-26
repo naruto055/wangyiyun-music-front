@@ -16,11 +16,11 @@ import request from '@/utils/request'
  * @returns {Promise} 返回分页数据 { records, total, pages, current, size }
  */
 export function getMusicList(params) {
-  return request({
-    url: '/music/list',
-    method: 'get',
-    params
-  })
+	return request({
+		url: '/music/list',
+		method: 'get',
+		params,
+	})
 }
 
 /**
@@ -29,8 +29,8 @@ export function getMusicList(params) {
  * @returns {Promise} 返回音乐详情对象（包含歌手、标签等）
  */
 export function getMusicDetail(id) {
-  return request({
-    url: `/music/${id}`,
-    method: 'get'
-  })
+	return request({
+		url: `/music/${id}`,
+		method: 'get',
+	})
 }

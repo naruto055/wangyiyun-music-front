@@ -7,5 +7,5 @@ import { twMerge } from 'tailwind-merge'
  * @returns {string} - 合并后的类名
  */
 export function cn(...inputs) {
-  return twMerge(clsx(inputs))
+	return twMerge(clsx(inputs))
 }

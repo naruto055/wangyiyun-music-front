@@ -5,23 +5,23 @@ import { createRouter, createWebHistory } from 'vue-router'
  */
 
 const routes = [
-  {
-    path: '/',
-    redirect: '/music'
-  },
-  {
-    path: '/music',
-    name: 'MusicList',
-    component: () => import('@/views/MusicList.vue'),
-    meta: {
-      title: '音乐列表'
-    }
-  }
+	{
+		path: '/',
+		redirect: '/music',
+	},
+	{
+		path: '/music',
+		name: 'MusicList',
+		component: () => import('@/views/MusicList.vue'),
+		meta: {
+			title: '音乐列表',
+		},
+	},
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
-  routes
+	history: createWebHistory(),
+	routes,
 })
 
 export default router

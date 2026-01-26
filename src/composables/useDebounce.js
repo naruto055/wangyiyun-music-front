@@ -14,17 +14,17 @@ import { ref, watch } from 'vue'
  * debouncedSearch('keyword')
  */
 export function useDebounceFn(fn, delay = 300) {
-  let timeout = null
+	let timeout = null
 
-  return function (...args) {
-    if (timeout) {
-      clearTimeout(timeout)
-    }
+	return function (...args) {
+		if (timeout) {
+			clearTimeout(timeout)
+		}
 
-    timeout = setTimeout(() => {
-      fn.apply(this, args)
-    }, delay)
-  }
+		timeout = setTimeout(() => {
+			fn.apply(this, args)
+		}, delay)
+	}
 }
 
 /**
@@ -42,23 +42,23 @@ export function useDebounceFn(fn, delay = 300) {
  * })
  */
 export function useDebounceValue(value, delay = 300) {
-  const debouncedValue = ref(value.value)
+	const debouncedValue = ref(value.value)
 
-  let timeout = null
+	let timeout = null
 
-  watch(
-    value,
-    (newValue) => {
-      if (timeout) {
-        clearTimeout(timeout)
-      }
+	watch(
+		value,
+		(newValue) => {
+			if (timeout) {
+				clearTimeout(timeout)
+			}
 
-      timeout = setTimeout(() => {
-        debouncedValue.value = newValue
-      }, delay)
-    },
-    { immediate: true }
-  )
+			timeout = setTimeout(() => {
+				debouncedValue.value = newValue
+			}, delay)
+		},
+		{ immediate: true }
+	)
 
-  return debouncedValue
+	return debouncedValue
 }

@@ -13,101 +13,101 @@ let globalToastInstance = null
  * toast.error('操作失败')
  */
 export function useToast() {
-  /**
-   * 显示 Toast
-   */
-  function show(options) {
-    const id = Date.now()
+	/**
+	 * 显示 Toast
+	 */
+	function show(options) {
+		const id = Date.now()
 
-    const toast = {
-      id,
-      ...options,
-      visible: true
-    }
+		const toast = {
+			id,
+			...options,
+			visible: true,
+		}
 
-    toasts.value.push(toast)
+		toasts.value.push(toast)
 
-    return id
-  }
+		return id
+	}
 
-  /**
-   * 成功提示
-   */
-  function success(message, duration = 3000) {
-    return show({
-      message,
-      variant: 'success',
-      duration
-    })
-  }
+	/**
+	 * 成功提示
+	 */
+	function success(message, duration = 3000) {
+		return show({
+			message,
+			variant: 'success',
+			duration,
+		})
+	}
 
-  /**
-   * 错误提示
-   */
-  function error(message, duration = 5000) {
-    return show({
-      message,
-      variant: 'error',
-      duration
-    })
-  }
+	/**
+	 * 错误提示
+	 */
+	function error(message, duration = 5000) {
+		return show({
+			message,
+			variant: 'error',
+			duration,
+		})
+	}
 
-  /**
-   * 警告提示
-   */
-  function warning(message, duration = 3000) {
-    return show({
-      message,
-      variant: 'warning',
-      duration
-    })
-  }
+	/**
+	 * 警告提示
+	 */
+	function warning(message, duration = 3000) {
+		return show({
+			message,
+			variant: 'warning',
+			duration,
+		})
+	}
 
-  /**
-   * 信息提示
-   */
-  function info(message, duration = 3000) {
-    return show({
-      message,
-      variant: 'info',
-      duration
-    })
-  }
+	/**
+	 * 信息提示
+	 */
+	function info(message, duration = 3000) {
+		return show({
+			message,
+			variant: 'info',
+			duration,
+		})
+	}
 
-  /**
-   * 关闭指定 Toast
-   */
-  function close(id) {
-    const index = toasts.value.findIndex((t) => t.id === id)
-    if (index !== -1) {
-      toasts.value.splice(index, 1)
-    }
-  }
+	/**
+	 * 关闭指定 Toast
+	 */
+	function close(id) {
+		const index = toasts.value.findIndex((t) => t.id === id)
+		if (index !== -1) {
+			toasts.value.splice(index, 1)
+		}
+	}
 
-  /**
-   * 关闭所有 Toast
-   */
-  function closeAll() {
-    toasts.value = []
-  }
+	/**
+	 * 关闭所有 Toast
+	 */
+	function closeAll() {
+		toasts.value = []
+	}
 
-  const instance = {
-    toasts,
-    show,
-    success,
-    error,
-    warning,
-    info,
-    close,
-    closeAll
-  }
+	const instance = {
+		toasts,
+		show,
+		success,
+		error,
+		warning,
+		info,
+		close,
+		closeAll,
+	}
 
-  // 保存全局实例
-  if (!globalToastInstance) {
-    globalToastInstance = instance
-  }
+	// 保存全局实例
+	if (!globalToastInstance) {
+		globalToastInstance = instance
+	}
 
-  return instance
+	return instance
 }
 
 /**
@@ -117,32 +117,32 @@ export function useToast() {
  * toast.error('请求失败')
  */
 export const toast = {
-  success: (message, duration) => {
-    if (!globalToastInstance) {
-      console.warn('Toast instance not initialized. Call useToast() first.')
-      return
-    }
-    return globalToastInstance.success(message, duration)
-  },
-  error: (message, duration) => {
-    if (!globalToastInstance) {
-      console.warn('Toast instance not initialized. Call useToast() first.')
-      return
-    }
-    return globalToastInstance.error(message, duration)
-  },
-  warning: (message, duration) => {
-    if (!globalToastInstance) {
-      console.warn('Toast instance not initialized. Call useToast() first.')
-      return
-    }
-    return globalToastInstance.warning(message, duration)
-  },
-  info: (message, duration) => {
-    if (!globalToastInstance) {
-      console.warn('Toast instance not initialized. Call useToast() first.')
-      return
-    }
-    return globalToastInstance.info(message, duration)
-  }
+	success: (message, duration) => {
+		if (!globalToastInstance) {
+			console.warn('Toast instance not initialized. Call useToast() first.')
+			return
+		}
+		return globalToastInstance.success(message, duration)
+	},
+	error: (message, duration) => {
+		if (!globalToastInstance) {
+			console.warn('Toast instance not initialized. Call useToast() first.')
+			return
+		}
+		return globalToastInstance.error(message, duration)
+	},
+	warning: (message, duration) => {
+		if (!globalToastInstance) {
+			console.warn('Toast instance not initialized. Call useToast() first.')
+			return
+		}
+		return globalToastInstance.warning(message, duration)
+	},
+	info: (message, duration) => {
+		if (!globalToastInstance) {
+			console.warn('Toast instance not initialized. Call useToast() first.')
+			return
+		}
+		return globalToastInstance.info(message, duration)
+	},
 }
