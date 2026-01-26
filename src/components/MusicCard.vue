@@ -6,7 +6,7 @@
 				<img
 					v-if="music.coverUrl"
 					:src="music.coverUrl"
-					:alt="music.name"
+					:alt="music.title"
 					class="h-full w-full object-cover transition-transform group-hover:scale-105"
 				/>
 				<div v-else class="flex h-full w-full items-center justify-center bg-gradient-to-br from-red-400 to-red-600 text-white">
@@ -36,10 +36,10 @@
 			<!-- 音乐信息 -->
 			<div class="space-y-1 p-3">
 				<h3 class="truncate text-sm font-medium leading-tight group-hover:text-red-500">
-					{{ music.name }}
+					{{ music.title }}
 				</h3>
 				<p class="truncate text-xs text-muted-foreground">
-					{{ music.artistName || '未知歌手' }}
+					{{ music.artistNames || '未知歌手' }}
 				</p>
 			</div>
 		</CardContent>

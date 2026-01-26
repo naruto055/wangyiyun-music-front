@@ -35,8 +35,8 @@
 					<div v-if="musicDetail.tags && musicDetail.tags.length > 0" class="space-y-2">
 						<h3 class="text-sm font-semibold">标签</h3>
 						<div class="flex flex-wrap gap-2">
-							<span v-for="tag in musicDetail.tags" :key="tag.id" class="rounded-full border border-border px-3 py-1 text-xs">
-								{{ tag.name }}
+							<span v-for="(tag, index) in musicDetail.tags" :key="index" class="rounded-full border border-border px-3 py-1 text-xs">
+								{{ tag }}
 							</span>
 						</div>
 					</div>
@@ -66,9 +66,9 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
-import Dialog from '@/components/ui/dialog/Dialog.vue'
-import { useMusicStore } from '@/stores/music'
+import { ref, watch } from 'vue';
+import Dialog from '@/components/ui/dialog/Dialog.vue';
+import { useMusicStore } from '@/stores/music';
 
 const props = defineProps({
 	open: {
@@ -79,14 +79,14 @@ const props = defineProps({
 		type: Number,
 		default: null,
 	},
-})
+});
 
-const emit = defineEmits(['update:open'])
+const emit = defineEmits(['update:open']);
 
-const musicStore = useMusicStore()
+const musicStore = useMusicStore();
 
 // 组件内部状态，不需要暴露给父组件
-const musicDetail = ref(null)
+const musicDetail = ref(null);
 
 /**
  * 监听弹窗打开，获取音乐详情
@@ -95,30 +95,30 @@ watch(
 	() => props.open,
 	async (newVal) => {
 		if (newVal && props.musicId) {
-			musicDetail.value = await musicStore.fetchMusicDetail(props.musicId)
+			musicDetail.value = await musicStore.fetchMusicDetail(props.musicId);
 		}
 	},
 	{ immediate: true }
-)
+);
 
 /**
  * 格式化时长
  */
 function formatDuration(seconds) {
-	if (!seconds) return '0:00'
-	const minutes = Math.floor(seconds / 60)
-	const secs = seconds % 60
-	return `${minutes}:${secs.toString().padStart(2, '0')}`
+	if (!seconds) return '0:00';
+	const minutes = Math.floor(seconds / 60);
+	const secs = seconds % 60;
+	return `${minutes}:${secs.toString().padStart(2, '0')}`;
 }
 
 /**
  * 格式化播放量
  */
 function formatPlayCount(count) {
-	if (!count) return '0'
+	if (!count) return '0';
 	if (count >= 10000) {
-		return (count / 10000).toFixed(1) + '万'
+		return (count / 10000).toFixed(1) + '万';
 	}
-	return count.toString()
+	return count.toString();
 }
 </script>
