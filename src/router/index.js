@@ -17,6 +17,14 @@ const routes = [
 			title: '音乐列表',
 		},
 	},
+	{
+		path: '/favorites',
+		name: 'FavoriteList',
+		component: () => import('@/views/FavoriteList.vue'),
+		meta: {
+			title: '我的收藏',
+		},
+	},
 ]
 
 const router = createRouter({

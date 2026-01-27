@@ -55,20 +55,44 @@
 		</div>
 
 		<template #footer>
-			<button
-				@click="$emit('update:open', false)"
-				class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2"
-			>
-				关闭
-			</button>
+			<div class="flex items-center justify-between gap-4">
+				<!-- 收藏按钮 -->
+				<button
+					v-if="musicDetail"
+					:disabled="favoriting"
+					@click="handleToggleFavorite"
+					class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring h-9 px-4 py-2"
+					:class="[
+						isFavorited
+							? 'bg-red-500 text-white hover:bg-red-600'
+							: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+						favoriting && 'opacity-50 cursor-not-allowed',
+					]"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" :fill="isFavorited ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
+						<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+					</svg>
+					<span>{{ isFavorited ? '已收藏' : '收藏' }}</span>
+				</button>
+
+				<!-- 关闭按钮 -->
+				<button
+					@click="$emit('update:open', false)"
+					class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2 ml-auto"
+				>
+					关闭
+				</button>
+			</div>
 		</template>
 	</Dialog>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import Dialog from '@/components/ui/dialog/Dialog.vue';
 import { useMusicStore } from '@/stores/music';
+import { useFavoriteStore } from '@/stores/favorite';
+import { toast } from '@/composables/useToast';
 
 const props = defineProps({
 	open: {
@@ -84,9 +108,17 @@ const props = defineProps({
 const emit = defineEmits(['update:open']);
 
 const musicStore = useMusicStore();
+const favoriteStore = useFavoriteStore();
 
 // 组件内部状态，不需要暴露给父组件
 const musicDetail = ref(null);
+const favoriting = ref(false);
+
+// 计算收藏状态
+const isFavorited = computed(() => {
+	if (!props.musicId) return false;
+	return favoriteStore.isFavorited(props.musicId);
+});
 
 /**
  * 监听弹窗打开，获取音乐详情
@@ -96,10 +128,29 @@ watch(
 	async (newVal) => {
 		if (newVal && props.musicId) {
 			musicDetail.value = await musicStore.fetchMusicDetail(props.musicId);
+			// 同步收藏状态
+			await favoriteStore.fetchFavoriteList();
 		}
 	},
 	{ immediate: true }
 );
+
+/**
+ * 切换收藏状态
+ */
+async function handleToggleFavorite() {
+	if (!props.musicId || favoriting.value) return;
+
+	favoriting.value = true;
+	try {
+		const newState = await favoriteStore.toggleFavorite(props.musicId);
+		toast.success(newState ? '收藏成功' : '已取消收藏');
+	} catch (error) {
+		toast.error('操作失败，请稍后重试');
+	} finally {
+		favoriting.value = false;
+	}
+}
 
 /**
  * 格式化时长
