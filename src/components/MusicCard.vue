@@ -16,7 +16,10 @@
 				</div>
 
 				<!-- 播放遮罩层 -->
-				<div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+				<div
+					class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
+					@click.stop="handlePlay"
+				>
 					<div class="flex h-16 w-16 items-center justify-center rounded-full bg-red-500 text-white shadow-lg">
 						<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="currentColor">
 							<path d="M8 5v14l11-7z" />
@@ -49,6 +52,12 @@
 <script setup>
 import Card from '@/components/ui/card/Card.vue'
 import CardContent from '@/components/ui/card/CardContent.vue'
+import { usePlayerStore } from '@/stores/player'
+import { useMusicStore } from '@/stores/music'
+import { formatPlayCount } from '@/utils/audioFormat'
+
+const playerStore = usePlayerStore()
+const musicStore = useMusicStore()
 
 const props = defineProps({
 	music: {
@@ -60,14 +69,25 @@ const props = defineProps({
 const emit = defineEmits(['click'])
 
 /**
- * 格式化播放量
+ * 处理播放按钮点击
+ * 先获取音乐详情（包含 fileUrl），再播放
  */
-function formatPlayCount(count) {
-	if (!count) return '0'
-	if (count >= 10000) {
-		return (count / 10000).toFixed(1) + '万'
+async function handlePlay() {
+	// 获取音乐ID（兼容不同的数据结构）
+	const musicId = props.music.id || props.music.musicId
+	if (!musicId) {
+		console.error('无法获取音乐ID')
+		return
 	}
-	return count.toString()
+
+	// 获取完整的音乐详情（包含 fileUrl 和 audioSources）
+	const musicDetail = await musicStore.fetchMusicDetail(musicId)
+	if (musicDetail) {
+		// 播放音乐
+		playerStore.playTrack(musicDetail)
+	} else {
+		console.error('获取音乐详情失败')
+	}
 }
 
 /**

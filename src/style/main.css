@@ -75,3 +75,14 @@
 ::-webkit-scrollbar-thumb:hover {
 	background: #9ca3af;
 }
+
+/* 页面主体底部间距，防止内容被播放栏遮挡 */
+body {
+	padding-bottom: 80px; /* 桌面端播放栏高度 */
+}
+
+@media (max-width: 768px) {
+	body {
+		padding-bottom: 100px; /* 移动端播放栏高度 + 进度条 */
+	}
+}
