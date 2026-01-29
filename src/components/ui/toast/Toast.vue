@@ -3,13 +3,13 @@
 		<Transition name="toast">
 			<div
 				v-if="visible"
-				:class="cn('fixed top-4 right-4 z-50 flex items-center gap-3 rounded-lg border px-4 py-3 shadow-lg', variantClasses[variant])"
+				:class="cn('fixed top-4 right-4 z-50 flex items-center gap-3 rounded-lg border px-4 py-3', variantClasses[variant])"
 			>
 				<!-- 图标 -->
-				<component :is="icon" class="h-5 w-5 flex-shrink-0" />
+				<component :is="icon" class="h-6 w-6 flex-shrink-0" />
 
 				<!-- 消息 -->
-				<p class="text-sm font-medium">{{ message }}</p>
+				<p class="text-sm font-semibold">{{ message }}</p>
 
 				<!-- 关闭按钮 -->
 				<button @click="handleClose" class="ml-auto flex-shrink-0 rounded-full p-1 hover:bg-black/10 dark:hover:bg-white/10">
@@ -50,10 +50,10 @@ const visible = defineModel('visible', { default: true })
 let timer = null
 
 const variantClasses = {
-	success: 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200',
-	error: 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200',
-	warning: 'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200',
-	info: 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-200',
+	success: 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900 dark:border-green-700 dark:text-green-100',
+	error: 'bg-red-500 border-red-600 text-white dark:bg-red-600 dark:border-red-500 dark:text-white',
+	warning: 'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:border-yellow-700 dark:text-yellow-100',
+	info: 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900 dark:border-blue-700 dark:text-blue-100',
 }
 
 const icons = {
