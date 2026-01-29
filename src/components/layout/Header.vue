@@ -15,7 +15,9 @@
 				<router-link
 					to="/music"
 					class="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors"
-					:class="currentPath === '/music' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'"
+					:class="
+						currentPath === '/music' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+					"
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path d="M9 18V5l12-2v13"></path>
@@ -27,10 +29,14 @@
 				<router-link
 					to="/favorites"
 					class="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors"
-					:class="currentPath === '/favorites' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'"
+					:class="
+						currentPath === '/favorites' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+					"
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+						<path
+							d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
+						></path>
 					</svg>
 					我的收藏
 				</router-link>
@@ -44,11 +50,11 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 
-const route = useRoute();
+const route = useRoute()
 
 // 当前路径
-const currentPath = computed(() => route.path);
+const currentPath = computed(() => route.path)
 </script>
