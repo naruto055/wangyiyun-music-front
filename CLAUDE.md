@@ -1,6 +1,6 @@
 # 网易云音乐前端项目
 
-> **最后更新：** 2026-01-29
+> **最后更新：** 2026-01-30
 > **项目状态：** 开发中
 > **技术栈：** Vue 3 + Vite + Pinia + Tailwind CSS
 
@@ -304,6 +304,215 @@ npm run format:check
 
 ---
 
+## 🔗 后端服务对接
+
+### 后端项目路径
+
+**后端项目位置：** `D:\JavaCodeStudy\wangyiyun-music`
+
+**技术栈：** Spring Boot 3.1.0 + Java 17 + MySQL + MyBatis-Plus
+
+**服务地址：**
+- 开发环境：http://localhost:8910
+- Swagger 文档：http://localhost:8910/swagger-ui/index.html
+
+### 后端文档索引
+
+#### 核心文档
+
+| 文档 | 路径 | 说明 |
+|------|------|------|
+| **项目 AI 上下文** | [D:\JavaCodeStudy\wangyiyun-music\CLAUDE.md](D:\JavaCodeStudy\wangyiyun-music\CLAUDE.md) | 后端项目完整架构、模块索引、开发规范 |
+| **API 接口文档** | [D:\JavaCodeStudy\wangyiyun-music\docs\API接口文档.md](D:\JavaCodeStudy\wangyiyun-music\docs\API接口文档.md) | 完整 API 接口清单、请求/响应格式、数据模型 |
+| **API 测试指南** | [D:\JavaCodeStudy\wangyiyun-music\docs\API测试指南.md](D:\JavaCodeStudy\wangyiyun-music\docs\API测试指南.md) | 接口测试流程、cURL 示例、常见问题 |
+
+#### 后端模块结构
+
+```
+wangyiyun-music/
+├── src/main/java/com/naruto/wangyiyunmusic/
+│   ├── controller/        # API 控制器 (10个)
+│   │   ├── MusicController.java
+│   │   ├── FavoriteController.java
+│   │   ├── AudioController.java
+│   │   └── PlayRecordController.java
+│   ├── service/          # 业务服务层 (23个)
+│   │   ├── MusicService.java
+│   │   ├── AudioService.java
+│   │   └── impl/
+│   ├── mapper/           # 数据访问层 (MyBatis-Plus)
+│   ├── model/
+│   │   ├── entity/       # 实体类 (9个)
+│   │   ├── vo/           # 视图对象
+│   │   └── dto/          # 数据传输对象
+│   ├── config/           # 配置类 (Swagger、MyBatis-Plus、WebMvc)
+│   ├── exception/        # 全局异常处理
+│   └── common/           # 通用工具类 (Result 统一响应)
+└── src/main/resources/
+    └── application.yaml  # 配置文件
+```
+
+### API 快速参考
+
+#### 统一响应格式
+
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": { ... }
+}
+```
+
+**说明：**
+- 后端使用 `GlobalResponseAdvice` 自动封装所有响应为 `Result<T>` 格式
+- Controller 方法可直接返回业务对象，无需手动包装
+
+#### 核心接口清单
+
+| 功能模块 | 接口 | 方法 | 说明 |
+|---------|------|------|------|
+| **音乐管理** | `/api/music/list` | GET | 分页查询音乐列表（支持关键词搜索、排序）|
+| | `/api/music/{id}` | GET | 获取音乐详情（包含歌手、专辑、标签）|
+| **收藏管理** | `/api/favorite/{musicId}` | POST | 收藏音乐 |
+| | `/api/favorite/{musicId}` | DELETE | 取消收藏 |
+| | `/api/favorite/list` | GET | 查询收藏列表（分页）|
+| **音频播放** | `/api/audio/{musicId}` | GET | 获取音频访问 URL（支持 HTTP Range 请求）|
+| **播放记录** | `/api/play-record` | POST | 记录播放 |
+| | `/api/play-record/history` | GET | 查询播放历史（分页）|
+
+#### 关键数据模型
+
+**MusicListVO** (音乐列表视图对象)
+```javascript
+{
+  id: Long,              // 音乐ID
+  title: String,         // 歌曲名称
+  fileUrl: String,       // 音频文件URL
+  coverUrl: String,      // 封面图片URL
+  duration: Integer,     // 时长（秒）
+  playCount: Integer,    // 播放量
+  artistNames: String,   // 歌手名称（多个用 "/" 分隔）
+  categoryId: Long,      // 分类ID
+  createTime: DateTime   // 创建时间
+}
+```
+
+**AudioUrlVO** (音频 URL 视图对象)
+```javascript
+{
+  musicId: Long,        // 音乐ID
+  audioUrl: String      // 音频访问URL (http://localhost:8910/audio/xxx.mp3)
+}
+```
+
+### 关键配置信息
+
+#### 后端配置 (application.yaml)
+
+```yaml
+server:
+  port: 8910
+
+# 音频文件配置
+audio:
+  storage-path: file:D:/music-data/audio/
+  url-prefix: /audio/
+  server-base-url: http://localhost:${server.port}
+
+# 数据库配置
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/wangyiyun_music
+```
+
+#### 前端代理配置 (vite.config.js)
+
+```javascript
+server: {
+  proxy: {
+    '/api': {
+      target: 'http://localhost:8910',
+      changeOrigin: true
+    }
+  }
+}
+```
+
+### 前后端对接注意事项
+
+#### 1. 响应数据提取
+
+前端需要从统一响应格式中提取 `data` 字段：
+
+```javascript
+// src/utils/request.js
+response.interceptors.use(
+  (response) => {
+    const { code, data, message } = response.data
+    if (code === 200) {
+      return data  // 只返回 data 部分
+    }
+    // 错误处理...
+  }
+)
+```
+
+#### 2. 音频播放支持
+
+- 后端已配置 HTTP Range 请求支持（WebMvcConfig），支持拖拽播放
+- 音频 URL 格式：`http://localhost:8910/audio/{filename}.mp3`
+- 通过 `/api/audio/{musicId}` 接口获取音频 URL
+
+#### 3. 歌手名称显示
+
+- 音乐列表接口返回 `artistNames` 字段（已聚合）
+- 多个歌手用 `"/"` 分隔（例如："周杰伦/方文山"）
+- 音乐详情接口返回完整 `artists` 数组
+
+#### 4. 分页参数
+
+后端使用 MyBatis-Plus 分页，响应格式：
+
+```json
+{
+  "records": [...],    // 数据列表
+  "total": 100,        // 总记录数
+  "pages": 10,         // 总页数
+  "current": 1,        // 当前页码
+  "size": 10          // 每页大小
+}
+```
+
+#### 5. 异常处理
+
+- 后端使用 `GlobalExceptionHandler` 统一异常处理
+- 业务异常返回格式：`{ code: 500, message: "错误信息", data: null }`
+- 前端应在 Axios 拦截器中统一处理错误响应
+
+#### 6. 开发调试
+
+- **后端日志：** 查看 IDEA 控制台或日志文件
+- **Swagger 文档：** http://localhost:8910/swagger-ui/index.html（可直接测试接口）
+- **数据库查看：** 使用 IDEA Database 工具或 Navicat
+
+### 快速开发流程
+
+1. **查看后端文档** - 了解接口定义和数据模型
+2. **查看 Swagger** - 确认接口格式和测试数据
+3. **编写前端 API 方法** - 在 [src/api/](src/api/) 中定义接口调用
+4. **测试接口** - 使用 Swagger 或 cURL 验证接口
+5. **集成到前端** - 在组件中调用 API 并处理响应
+
+### 相关资源
+
+- **后端启动方式：** 在 IDEA 中运行 `WangyiyunMusicApplication.java`
+- **后端 Maven 命令：** `mvn spring-boot:run`
+- **Swagger UI 文档：** [http://localhost:8910/swagger-ui/index.html](http://localhost:8910/swagger-ui/index.html)
+- **数据库：** MySQL 8.0+，数据库名 `wangyiyun_music`
+
+---
+
 ## 📊 状态管理
 
 ### Player Store (播放器状态)
@@ -400,5 +609,23 @@ MIT
 
 ---
 
-**生成时间：** 2026-01-29 23:41:15
-**文档版本：** 1.0.0
+## 📝 更新日志
+
+### 2026-01-30
+- ✅ 添加后端服务对接章节
+- ✅ 引用后端项目文档路径（CLAUDE.md、API 文档、测试指南）
+- ✅ 添加后端模块结构说明
+- ✅ 添加 API 快速参考和核心接口清单
+- ✅ 添加前后端对接注意事项（响应格式、分页、异常处理等）
+- ✅ 添加快速开发流程指引
+
+### 2026-01-29
+- ✅ 初始化项目文档
+- ✅ 添加项目架构和技术栈说明
+- ✅ 添加功能模块文档
+- ✅ 添加开发规范
+
+---
+
+**最后更新：** 2026-01-30 20:50:00
+**文档版本：** 1.1.0
