@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/album-crud/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-02-01T12:23:05.647Z",
+      "trigger": "initial",
+      "approvalId": "approval_1769948585636_bobho1zr7",
+      "approvalTitle": "Tasks Document - 专辑管理功能 (Album CRUD)"
+    }
+  ]
+}

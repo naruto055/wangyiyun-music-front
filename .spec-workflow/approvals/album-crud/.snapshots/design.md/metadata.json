@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/album-crud/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-02-01T12:14:34.717Z",
+      "trigger": "initial",
+      "approvalId": "approval_1769948074704_lyquypufw",
+      "approvalTitle": "专辑管理功能 - Design (技术设计)"
+    }
+  ]
+}

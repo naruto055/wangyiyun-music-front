@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/album-crud/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-02-01T11:57:31.707Z",
+      "trigger": "initial",
+      "approvalId": "approval_1769947051686_0s9tqhg7t",
+      "approvalTitle": "专辑管理功能 - Requirements (需求分析)"
+    }
+  ]
+}
