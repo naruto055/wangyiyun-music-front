@@ -9,7 +9,7 @@ import { toast } from '@/composables/useToast'
 // 创建 axios 实例
 const request = axios.create({
 	baseURL: '/api', // 使用 Vite 代理，无需完整 URL
-	timeout: 10000, // 请求超时时间
+	timeout: 120000, // 请求超时时间（120秒，视频解析需要较长时间）
 	headers: {
 		'Content-Type': 'application/json;charset=UTF-8',
 	},
