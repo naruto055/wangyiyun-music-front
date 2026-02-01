@@ -1,0 +1,232 @@
+{
+  "metadata": {
+    "project_name": "wangyiyun-music-front",
+    "description": "网易云音乐前端应用 - 基于 Vue 3 的现代化 SPA",
+    "version": "0.0.0",
+    "language": "JavaScript/Vue",
+    "framework": "Vue 3.5.24 + Vite 7.2.4",
+    "last_scan_time": "2026-02-01T16:01:33+08:00",
+    "scan_strategy": "adaptive-mixed",
+    "coverage": {
+      "total_files_estimated": 52,
+      "scanned_files": 48,
+      "coverage_percentage": 92,
+      "ignored_patterns": [
+        "node_modules/**",
+        "dist/**",
+        "dist-ssr/**",
+        "*.local",
+        ".vscode/**",
+        ".idea/**"
+      ]
+    }
+  },
+  "modules": [
+    {
+      "name": "api",
+      "path": "src/api",
+      "type": "data-access",
+      "description": "API 接口层 - Axios 封装",
+      "file_count": 4,
+      "key_files": [
+        "music.js - 音乐管理接口",
+        "favorite.js - 收藏管理接口",
+        "audio.js - 音频管理接口",
+        "video.js - 视频解析接口 (新增)"
+      ],
+      "coverage": {
+        "has_interfaces": true,
+        "has_tests": false,
+        "has_documentation": true
+      }
+    },
+    {
+      "name": "components",
+      "path": "src/components",
+      "type": "presentation",
+      "description": "UI 组件库 + 业务组件",
+      "file_count": 28,
+      "subdirectories": [
+        "ui - UI 组件库 (Button, Card, Input, Dialog, Pagination, Skeleton, Toast)",
+        "player - 播放器组件 (PlayerBar, PlayerControls, PlayerInfo, PlayerProgress, PlayerVolume, PlayerPlaylist)",
+        "layout - 布局组件 (Header)",
+        "MusicCard.vue - 音乐卡片组件",
+        "MusicDetailDialog.vue - 音乐详情对话框"
+      ],
+      "coverage": {
+        "has_interfaces": true,
+        "has_tests": false,
+        "has_documentation": true
+      }
+    },
+    {
+      "name": "composables",
+      "path": "src/composables",
+      "type": "business-logic",
+      "description": "可组合函数 - 封装复用逻辑",
+      "file_count": 3,
+      "key_files": [
+        "useAudioPlayer.js - 音频播放器逻辑",
+        "useToast.js - Toast 提示",
+        "useDebounce.js - 防抖函数"
+      ],
+      "coverage": {
+        "has_interfaces": true,
+        "has_tests": false,
+        "has_documentation": true
+      }
+    },
+    {
+      "name": "stores",
+      "path": "src/stores",
+      "type": "state-management",
+      "description": "Pinia 状态管理",
+      "file_count": 3,
+      "key_files": [
+        "player.js - 播放器状态",
+        "music.js - 音乐列表状态",
+        "favorite.js - 收藏状态"
+      ],
+      "coverage": {
+        "has_interfaces": true,
+        "has_tests": false,
+        "has_documentation": true
+      }
+    },
+    {
+      "name": "utils",
+      "path": "src/utils",
+      "type": "infrastructure",
+      "description": "工具函数",
+      "file_count": 3,
+      "key_files": [
+        "request.js - Axios 请求封装",
+        "audioFormat.js - 音频格式处理",
+        "index.js - 工具函数导出"
+      ],
+      "coverage": {
+        "has_interfaces": true,
+        "has_tests": false,
+        "has_documentation": false
+      }
+    },
+    {
+      "name": "views",
+      "path": "src/views",
+      "type": "presentation",
+      "description": "页面视图",
+      "file_count": 3,
+      "key_files": [
+        "MusicList.vue - 音乐列表页",
+        "FavoriteList.vue - 收藏列表页",
+        "VideoParser.vue - 视频解析页 (新增)"
+      ],
+      "coverage": {
+        "has_interfaces": true,
+        "has_tests": false,
+        "has_documentation": true
+      }
+    },
+    {
+      "name": "router",
+      "path": "src/router",
+      "type": "infrastructure",
+      "description": "Vue Router 路由配置",
+      "file_count": 1,
+      "key_files": [
+        "index.js - 路由定义 (3个路由)"
+      ],
+      "coverage": {
+        "has_interfaces": true,
+        "has_tests": false,
+        "has_documentation": false
+      }
+    },
+    {
+      "name": "root",
+      "path": "src",
+      "type": "entry",
+      "description": "应用入口",
+      "file_count": 2,
+      "key_files": [
+        "main.js - 应用入口",
+        "App.vue - 根组件"
+      ],
+      "coverage": {
+        "has_interfaces": true,
+        "has_tests": false,
+        "has_documentation": false
+      }
+    }
+  ],
+  "important_paths": {
+    "entry_point": "src/main.js",
+    "root_component": "src/App.vue",
+    "router": "src/router/index.js",
+    "build_config": "vite.config.js",
+    "prettier_config": ".prettierrc.cjs",
+    "package_json": "package.json",
+    "documentation": "CLAUDE.md"
+  },
+  "technologies": {
+    "language": "JavaScript (ES6+)",
+    "framework": "Vue 3.5.24",
+    "build_tool": "Vite 7.2.4",
+    "state_management": "Pinia 2.3.1",
+    "router": "Vue Router 4.6.4",
+    "styling": "Tailwind CSS 4.1.18",
+    "ui_library": "Radix Vue 1.9.17",
+    "http_client": "Axios 1.13.3",
+    "code_formatter": "Prettier 3.8.1",
+    "utilities": [
+      "class-variance-authority 0.7.1",
+      "clsx 2.1.1",
+      "tailwind-merge 3.4.0"
+    ]
+  },
+  "new_features": [
+    {
+      "name": "视频解析功能",
+      "description": "支持 B 站视频解析并提取音频（对接后端 yt-dlp 服务）",
+      "modules": [
+        "src/api/video.js",
+        "src/views/VideoParser.vue"
+      ],
+      "status": "新增"
+    }
+  ],
+  "backend_references": {
+    "backend_project_path": "D:\\JavaCodeStudy\\wangyiyun-music",
+    "backend_documentation": "D:\\JavaCodeStudy\\wangyiyun-music\\CLAUDE.md",
+    "backend_api_docs": "D:\\JavaCodeStudy\\wangyiyun-music\\docs\\API接口文档.md",
+    "backend_test_guide": "D:\\JavaCodeStudy\\wangyiyun-music\\docs\\API测试指南.md",
+    "backend_index": "D:\\JavaCodeStudy\\wangyiyun-music\\.claude\\index.json",
+    "backend_service_url": "http://localhost:8910",
+    "swagger_url": "http://localhost:8910/swagger-ui/index.html"
+  },
+  "gaps": {
+    "missing_tests": [
+      "src/api/**",
+      "src/components/**",
+      "src/composables/**",
+      "src/stores/**",
+      "src/utils/**",
+      "src/views/**"
+    ],
+    "missing_documentation": [
+      "src/utils/CLAUDE.md - 缺少工具函数文档",
+      "src/router/CLAUDE.md - 缺少路由文档",
+      "src/components/player/CLAUDE.md - 缺少播放器组件文档"
+    ],
+    "recommended_next_steps": [
+      "补充单元测试（建议覆盖率 > 70%）",
+      "为新增的视频解析功能添加端到端测试",
+      "补充工具函数、路由、播放器组件的模块文档",
+      "添加 ESLint 配置以增强代码质量检查",
+      "优化移动端适配与响应式设计",
+      "实现用户认证功能（对接后端）",
+      "添加歌词显示功能",
+      "实现播放列表持久化"
+    ]
+  }
+}
