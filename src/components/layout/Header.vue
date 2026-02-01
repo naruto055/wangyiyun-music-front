@@ -41,6 +41,18 @@
 					我的收藏
 				</router-link>
 				<router-link
+					to="/albums"
+					class="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors"
+					:class="
+						currentPath === '/albums' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+					"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" />
+					</svg>
+					专辑列表
+				</router-link>
+				<router-link
 					to="/video-parser"
 					class="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors"
 					:class="

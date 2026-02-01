@@ -26,6 +26,14 @@ const routes = [
 		},
 	},
 	{
+		path: '/albums',
+		name: 'AlbumList',
+		component: () => import('@/views/AlbumList.vue'),
+		meta: {
+			title: '专辑列表',
+		},
+	},
+	{
 		path: '/video-parser',
 		name: 'VideoParser',
 		component: () => import('@/views/VideoParser.vue'),
