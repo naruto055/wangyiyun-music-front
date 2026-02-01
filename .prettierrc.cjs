@@ -2,7 +2,7 @@ module.exports = {
 	printWidth: 150,
 	tabWidth: 2,
 	useTabs: true,
-	semi: false,  // 不使用分号
+	semi: false,
 	singleQuote: true,
 	quoteProps: 'as-needed',
 	jsxSingleQuote: false,
@@ -10,12 +10,10 @@ module.exports = {
 	bracketSpacing: true,
 	bracketSameLine: false,
 	arrowParens: 'always',
-	rangeStart: 0,
-	rangeEnd: Infinity,
 	requirePragma: false,
 	insertPragma: false,
 	proseWrap: 'preserve',
 	htmlWhitespaceSensitivity: 'css',
 	vueIndentScriptAndStyle: false,
 	endOfLine: 'lf',
-};
+}
