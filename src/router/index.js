@@ -25,6 +25,14 @@ const routes = [
 			title: '我的收藏',
 		},
 	},
+	{
+		path: '/video-parser',
+		name: 'VideoParser',
+		component: () => import('@/views/VideoParser.vue'),
+		meta: {
+			title: '视频解析',
+		},
+	},
 ]
 
 const router = createRouter({
