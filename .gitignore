@@ -1,5 +1,23 @@
-# Logs
-logs
+# ========================================
+# 依赖和包管理器
+# ========================================
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# ========================================
+# 构建输出
+# ========================================
+dist/
+dist-ssr/
+build/
+*.local
+
+# ========================================
+# 日志文件
+# ========================================
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,18 +25,131 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# ========================================
+# BMAD 框架相关
+# ========================================
+# BMAD 输出目录（临时文件、日志、工作产物）
+_bmad-output/
 
-# Editor directories and files
+# BMAD 个人工作状态（可选，根据团队需求决定）
+# _bmad/_memory/personal-*
+
+# ========================================
+# 编辑器和 IDE
+# ========================================
+# VSCode
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# JetBrains IDEs (WebStorm, IntelliJ IDEA, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Visual Studio
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# ========================================
+# 操作系统文件
+# ========================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ========================================
+# 测试覆盖率
+# ========================================
+coverage/
+*.lcov
+.nyc_output/
+.cache/
+
+# ========================================
+# 环境变量和配置
+# ========================================
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ========================================
+# 临时文件和缓存
+# ========================================
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+.cache/
+.parcel-cache/
+.vite-inspect/
+
+# ========================================
+# 其他
+# ========================================
+# TypeScript 缓存
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Yarn Integrity file
+.yarn-integrity
+
+# ========================================
+# 项目特定（根据需要调整）
+# ========================================
+# 如果有自动生成的文档
+# docs/auto-generated/
+
+# 如果有本地测试数据
+# test-data/local/
+
+# ========================================
+# 说明：
+# ========================================
+# ✅ 已提交到 Git：
+#   - _bmad/            (BMAD 配置、Agent 定义、工作流)
+#   - .spec-workflow/   (规范文档、模板)
+#   - .claude/          (AI 上下文索引)
+#
+# ❌ 已忽略：
+#   - _bmad-output/     (临时输出、工作产物)
+#   - node_modules/     (依赖包)
+#   - dist/             (构建输出)
+# ========================================
