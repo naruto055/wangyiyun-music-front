@@ -14,11 +14,29 @@
 		<!-- 歌曲信息 -->
 		<div class="min-w-0 flex-1">
 			<template v-if="currentTrack">
-				<p class="truncate text-sm font-medium leading-tight">
-					{{ currentTrack.name || currentTrack.title || '未知歌曲' }}
-				</p>
+				<div class="flex items-center gap-2">
+					<p class="truncate text-sm font-medium leading-tight">
+						{{ currentTrack.name || currentTrack.title || '未知歌曲' }}
+					</p>
+					<!-- 临时文件标识 -->
+					<span
+						v-if="isTemporaryTrack(currentTrack)"
+						class="inline-flex items-center rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800 flex-shrink-0"
+						:title="getExpiryHint(currentTrack) || '临时文件'"
+					>
+						<svg class="w-3 h-3 mr-0.5" fill="currentColor" viewBox="0 0 20 20">
+							<path
+								fill-rule="evenodd"
+								d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+								clip-rule="evenodd"
+							/>
+						</svg>
+						临时
+					</span>
+				</div>
 				<p class="truncate text-xs text-gray-500">
 					{{ currentTrack.artistNames || '未知歌手' }}
+					<span v-if="expiryHint" class="text-amber-600 ml-1">{{ expiryHint }}</span>
 				</p>
 			</template>
 			<template v-else>
@@ -29,9 +47,17 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { usePlayerStore } from '@/stores/player'
+import { isTemporaryTrack, getExpiryHint } from '@/utils/trackAdapter'
 
 const playerStore = usePlayerStore()
 const { currentTrack } = storeToRefs(playerStore)
+
+// 计算过期提示文本
+const expiryHint = computed(() => {
+	if (!currentTrack.value) return null
+	return getExpiryHint(currentTrack.value)
+})
 </script>

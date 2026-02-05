@@ -9,3 +9,6 @@ import { twMerge } from 'tailwind-merge'
 export function cn(...inputs) {
 	return twMerge(clsx(inputs))
 }
+
+// 导出音轨适配器工具
+export { adaptVideoToTrack, adaptMusicToTrack, isTemporaryTrack, getExpiryHint, isTrackExpired } from './trackAdapter'

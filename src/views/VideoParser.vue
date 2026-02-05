@@ -298,6 +298,7 @@ import axios from 'axios'
 import { parseVideo } from '@/api/video'
 import { usePlayerStore } from '@/stores/player'
 import { useToast } from '@/composables/useToast'
+import { adaptVideoToTrack } from '@/utils/trackAdapter'
 import Header from '@/components/layout/Header.vue'
 import Card from '@/components/ui/card/Card.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -363,22 +364,8 @@ async function handleParse() {
 function handlePlay() {
 	if (!parseResult.value) return
 
-	// 构造音乐对象
-	const track = {
-		id: `video_${parseResult.value.sourceVideoId}`,
-		title: parseResult.value.title,
-		coverUrl: parseResult.value.coverUrl,
-		duration: parseResult.value.duration,
-		artistNames: '视频音频',
-		audioSources: [
-			{
-				id: Date.now(),
-				sourceUrl: parseResult.value.audioUrl,
-				format: parseResult.value.audioFormat,
-				quality: 'high',
-			},
-		],
-	}
+	// 使用适配器将视频解析结果转换为统一的音轨格式
+	const track = adaptVideoToTrack(parseResult.value)
 
 	// 播放音乐
 	playerStore.playTrack(track)

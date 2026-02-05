@@ -55,6 +55,7 @@ import CardContent from '@/components/ui/card/CardContent.vue'
 import { usePlayerStore } from '@/stores/player'
 import { useMusicStore } from '@/stores/music'
 import { formatPlayCount } from '@/utils/audioFormat'
+import { adaptMusicToTrack } from '@/utils/trackAdapter'
 
 const playerStore = usePlayerStore()
 const musicStore = useMusicStore()
@@ -83,8 +84,9 @@ async function handlePlay() {
 	// 获取完整的音乐详情（包含 fileUrl 和 audioSources）
 	const musicDetail = await musicStore.fetchMusicDetail(musicId)
 	if (musicDetail) {
-		// 播放音乐
-		playerStore.playTrack(musicDetail)
+		// 使用适配器将音乐详情转换为统一的音轨格式
+		const track = adaptMusicToTrack(musicDetail)
+		playerStore.playTrack(track)
 	} else {
 		console.error('获取音乐详情失败')
 	}

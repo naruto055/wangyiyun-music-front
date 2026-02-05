@@ -114,6 +114,7 @@ import { useFavoriteStore } from '@/stores/favorite'
 import { usePlayerStore } from '@/stores/player'
 import { toast } from '@/composables/useToast'
 import { formatDuration, formatPlayCount } from '@/utils/audioFormat'
+import { adaptMusicToTrack } from '@/utils/trackAdapter'
 
 const props = defineProps({
 	open: {
@@ -162,7 +163,9 @@ watch(
  */
 function handlePlay() {
 	if (musicDetail.value) {
-		playerStore.playTrack(musicDetail.value)
+		// 使用适配器将音乐详情转换为统一的音轨格式
+		const track = adaptMusicToTrack(musicDetail.value)
+		playerStore.playTrack(track)
 	}
 }
 
