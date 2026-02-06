@@ -41,6 +41,14 @@ const routes = [
 			title: '视频解析',
 		},
 	},
+	{
+		path: '/bilibili-search',
+		name: 'BilibiliSearch',
+		component: () => import('@/views/BilibiliSearch.vue'),
+		meta: {
+			title: 'B站音乐搜索',
+		},
+	},
 ]
 
 const router = createRouter({
