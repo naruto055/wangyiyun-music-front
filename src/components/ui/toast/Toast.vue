@@ -1,10 +1,7 @@
 <template>
 	<Teleport to="body">
 		<Transition name="toast">
-			<div
-				v-if="visible"
-				:class="cn('fixed top-4 right-4 z-50 flex items-center gap-3 rounded-lg border px-4 py-3', variantClasses[variant])"
-			>
+			<div v-if="visible" :class="cn('fixed top-4 right-4 z-50 flex items-center gap-3 rounded-lg border px-4 py-3', variantClasses[variant])">
 				<!-- 图标 -->
 				<component :is="icon" class="h-6 w-6 flex-shrink-0" />
 

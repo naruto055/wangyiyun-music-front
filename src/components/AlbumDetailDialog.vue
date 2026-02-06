@@ -36,9 +36,7 @@
 					<!-- 时间信息 -->
 					<div class="space-y-1">
 						<p class="text-xs text-muted-foreground">创建时间：{{ formatDateTime(albumDetail.createTime) }}</p>
-						<p v-if="albumDetail.updateTime" class="text-xs text-muted-foreground">
-							更新时间：{{ formatDateTime(albumDetail.updateTime) }}
-						</p>
+						<p v-if="albumDetail.updateTime" class="text-xs text-muted-foreground">更新时间：{{ formatDateTime(albumDetail.updateTime) }}</p>
 					</div>
 				</div>
 			</div>

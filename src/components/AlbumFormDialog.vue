@@ -7,9 +7,7 @@
 		<form @submit.prevent="handleSubmit" class="space-y-4">
 			<!-- 专辑名称 -->
 			<div class="space-y-2">
-				<label for="albumName" class="text-sm font-medium">
-					专辑名称 <span class="text-red-500">*</span>
-				</label>
+				<label for="albumName" class="text-sm font-medium"> 专辑名称 <span class="text-red-500">*</span> </label>
 				<input
 					id="albumName"
 					v-model="formData.name"

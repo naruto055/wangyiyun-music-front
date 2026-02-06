@@ -48,14 +48,16 @@ src/components/
 **路径：** [layout/Header.vue](./layout/Header.vue)
 
 **功能：**
+
 - 显示应用标题
 - 导航菜单（音乐列表、我的收藏）
 - 路由切换
 
 **使用示例：**
+
 ```vue
 <template>
-  <Header />
+	<Header />
 </template>
 ```
 
@@ -68,6 +70,7 @@ src/components/
 **路径：** [player/PlayerBar.vue](./player/PlayerBar.vue)
 
 **功能：**
+
 - 显示当前播放歌曲信息
 - 播放控制按钮（播放/暂停、上一曲、下一曲）
 - 进度条显示和控制
@@ -83,6 +86,7 @@ src/components/
 **路径：** [player/PlayerControls.vue](./player/PlayerControls.vue)
 
 **功能：**
+
 - 播放/暂停按钮
 - 上一曲/下一曲按钮
 - 播放模式切换按钮（顺序/随机/单曲循环）
@@ -98,6 +102,7 @@ src/components/
 **路径：** [player/PlayerInfo.vue](./player/PlayerInfo.vue)
 
 **功能：**
+
 - 显示当前播放歌曲封面
 - 显示歌曲名称
 - 显示歌手名称
@@ -108,11 +113,13 @@ src/components/
 **路径：** [player/PlayerProgress.vue](./player/PlayerProgress.vue)
 
 **功能：**
+
 - 显示播放进度条
 - 拖动进度条跳转播放时间
 - 显示当前时间和总时长
 
 **交互：**
+
 - 点击进度条跳转到指定位置
 - 拖动滑块实时更新播放时间
 
@@ -121,6 +128,7 @@ src/components/
 **路径：** [player/PlayerVolume.vue](./player/PlayerVolume.vue)
 
 **功能：**
+
 - 音量滑块控制
 - 静音切换
 - 音量图标显示
@@ -130,12 +138,14 @@ src/components/
 **路径：** [player/PlayerPlaylist.vue](./player/PlayerPlaylist.vue)
 
 **功能：**
+
 - 显示播放列表
 - 切换播放歌曲
 - 移除歌曲
 - 清空播放列表
 
 **交互：**
+
 - 点击歌曲切换播放
 - 点击删除按钮移除歌曲
 - 点击清空按钮清空列表
@@ -149,12 +159,14 @@ src/components/
 **路径：** [MusicCard.vue](./MusicCard.vue)
 
 **功能：**
+
 - 显示音乐封面、标题、歌手
 - 播放按钮
 - 收藏按钮
 - 点击查看详情
 
 **Props：**
+
 ```javascript
 {
   music: {
@@ -165,17 +177,15 @@ src/components/
 ```
 
 **事件：**
+
 - `play` - 点击播放按钮
 - `toggle-favorite` - 点击收藏按钮
 
 **使用示例：**
+
 ```vue
 <template>
-  <MusicCard
-    :music="music"
-    @play="handlePlay"
-    @toggle-favorite="handleToggleFavorite"
-  />
+	<MusicCard :music="music" @play="handlePlay" @toggle-favorite="handleToggleFavorite" />
 </template>
 ```
 
@@ -184,11 +194,13 @@ src/components/
 **路径：** [MusicDetailDialog.vue](./MusicDetailDialog.vue)
 
 **功能：**
+
 - 显示音乐详细信息
 - 播放控制
 - 收藏控制
 
 **Props：**
+
 ```javascript
 {
   music: {
@@ -203,6 +215,7 @@ src/components/
 ```
 
 **事件：**
+
 - `update:show` - 更新显示状态
 - `play` - 播放音乐
 - `toggle-favorite` - 切换收藏
@@ -220,6 +233,7 @@ src/components/
 **功能：** 基础按钮组件，支持多种变体和尺寸。
 
 **变体：**
+
 - `default` - 默认样式
 - `destructive` - 危险操作
 - `outline` - 轮廓样式
@@ -228,12 +242,14 @@ src/components/
 - `link` - 链接样式
 
 **尺寸：**
+
 - `default` - 默认
 - `sm` - 小
 - `lg` - 大
 - `icon` - 图标按钮
 
 **使用示例：**
+
 ```vue
 <Button variant="default">默认按钮</Button>
 <Button variant="destructive">删除</Button>
@@ -248,6 +264,7 @@ src/components/
 **路径：** [ui/card/](./ui/card/)
 
 **组件：**
+
 - `Card` - 容器
 - `CardHeader` - 头部
 - `CardTitle` - 标题
@@ -256,6 +273,7 @@ src/components/
 - `CardFooter` - 底部
 
 **使用示例：**
+
 ```vue
 <Card>
   <CardHeader>
@@ -278,6 +296,7 @@ src/components/
 **功能：** 文本输入框
 
 **Props：**
+
 ```javascript
 {
   modelValue: String,
@@ -297,6 +316,7 @@ src/components/
 **功能：** 模态对话框
 
 **组件：**
+
 - `DialogRoot` - 对话框容器
 - `DialogTrigger` - 触发器
 - `DialogPortal` - 传送门
@@ -313,6 +333,7 @@ src/components/
 **功能：** 分页组件
 
 **Props：**
+
 ```javascript
 {
   currentPage: Number,
@@ -332,10 +353,12 @@ src/components/
 **路径：** [ui/toast/](./ui/toast/)
 
 **组件：**
+
 - `ToastContainer` - Toast 容器（已在 `App.vue` 中注册）
 - `Toast` - 单个 Toast 组件
 
 **类型：**
+
 - `success` - 成功
 - `error` - 错误
 - `info` - 信息

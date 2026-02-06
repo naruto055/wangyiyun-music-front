@@ -55,6 +55,7 @@ src/views/
 ### 状态管理
 
 使用的 Store：
+
 - `musicStore` - 音乐列表状态
 - `favoriteStore` - 收藏状态
 - `playerStore` - 播放器状态
@@ -66,12 +67,12 @@ src/views/
 ```javascript
 // 使用防抖搜索
 const debouncedSearch = useDebounce((keyword) => {
-  musicStore.setSearchKeyword(keyword)
-  musicStore.fetchMusicList()
+	musicStore.setSearchKeyword(keyword)
+	musicStore.fetchMusicList()
 }, 500)
 
 watch(searchKeyword, (newKeyword) => {
-  debouncedSearch(newKeyword)
+	debouncedSearch(newKeyword)
 })
 ```
 
@@ -79,10 +80,10 @@ watch(searchKeyword, (newKeyword) => {
 
 ```javascript
 function handlePageChange(page) {
-  musicStore.setPagination(page, 12)
-  musicStore.fetchMusicList()
-  // 滚动到顶部
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+	musicStore.setPagination(page, 12)
+	musicStore.fetchMusicList()
+	// 滚动到顶部
+	window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 ```
 
@@ -90,11 +91,11 @@ function handlePageChange(page) {
 
 ```javascript
 async function handlePlay(music) {
-  // 获取音乐详情和音频 URL
-  const track = await musicStore.fetchMusicDetail(music.id)
-  if (track) {
-    playerStore.playTrack(track)
-  }
+	// 获取音乐详情和音频 URL
+	const track = await musicStore.fetchMusicDetail(music.id)
+	if (track) {
+		playerStore.playTrack(track)
+	}
 }
 ```
 
@@ -102,13 +103,13 @@ async function handlePlay(music) {
 
 ```javascript
 async function handleToggleFavorite(musicId) {
-  try {
-    const isFavorited = await favoriteStore.toggleFavorite(musicId)
-    // 显示提示
-    toast.success(isFavorited ? '已添加到收藏' : '已取消收藏')
-  } catch (error) {
-    toast.error('操作失败')
-  }
+	try {
+		const isFavorited = await favoriteStore.toggleFavorite(musicId)
+		// 显示提示
+		toast.success(isFavorited ? '已添加到收藏' : '已取消收藏')
+	} catch (error) {
+		toast.error('操作失败')
+	}
 }
 ```
 
@@ -163,6 +164,7 @@ async function handleToggleFavorite(musicId) {
 ### 状态管理
 
 使用的 Store：
+
 - `favoriteStore` - 收藏状态
 - `playerStore` - 播放器状态
 
@@ -172,7 +174,7 @@ async function handleToggleFavorite(musicId) {
 
 ```javascript
 onMounted(() => {
-  favoriteStore.fetchFavoriteList()
+	favoriteStore.fetchFavoriteList()
 })
 ```
 
@@ -180,14 +182,14 @@ onMounted(() => {
 
 ```javascript
 async function handleToggleFavorite(musicId) {
-  try {
-    await favoriteStore.toggleFavorite(musicId)
-    toast.success('已取消收藏')
-    // 刷新列表
-    favoriteStore.fetchFavoriteList()
-  } catch (error) {
-    toast.error('操作失败')
-  }
+	try {
+		await favoriteStore.toggleFavorite(musicId)
+		toast.success('已取消收藏')
+		// 刷新列表
+		favoriteStore.fetchFavoriteList()
+	} catch (error) {
+		toast.error('操作失败')
+	}
 }
 ```
 
@@ -195,7 +197,7 @@ async function handleToggleFavorite(musicId) {
 
 ```javascript
 const isEmpty = computed(() => {
-  return favoriteStore.favoriteList.length === 0 && !favoriteStore.loading
+	return favoriteStore.favoriteList.length === 0 && !favoriteStore.loading
 })
 ```
 
@@ -258,10 +260,10 @@ const isEmpty = computed(() => {
 
 ```javascript
 try {
-  // 执行操作
+	// 执行操作
 } catch (error) {
-  console.error('操作失败:', error)
-  toast.error('操作失败')
+	console.error('操作失败:', error)
+	toast.error('操作失败')
 }
 ```
 
@@ -275,26 +277,26 @@ try {
 
 ```javascript
 const routes = [
-  {
-    path: '/',
-    redirect: '/music',
-  },
-  {
-    path: '/music',
-    name: 'MusicList',
-    component: () => import('@/views/MusicList.vue'),
-    meta: {
-      title: '音乐列表',
-    },
-  },
-  {
-    path: '/favorites',
-    name: 'FavoriteList',
-    component: () => import('@/views/FavoriteList.vue'),
-    meta: {
-      title: '我的收藏',
-    },
-  },
+	{
+		path: '/',
+		redirect: '/music',
+	},
+	{
+		path: '/music',
+		name: 'MusicList',
+		component: () => import('@/views/MusicList.vue'),
+		meta: {
+			title: '音乐列表',
+		},
+	},
+	{
+		path: '/favorites',
+		name: 'FavoriteList',
+		component: () => import('@/views/FavoriteList.vue'),
+		meta: {
+			title: '我的收藏',
+		},
+	},
 ]
 ```
 
@@ -302,6 +304,7 @@ const routes = [
 
 1. **通过 Header 组件**：点击顶部导航菜单
 2. **编程式导航**：
+
    ```javascript
    import { useRouter } from 'vue-router'
 

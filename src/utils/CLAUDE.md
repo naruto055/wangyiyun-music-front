@@ -47,32 +47,35 @@ src/utils/
 ### 请求拦截器
 
 **功能：**
+
 1. 为 GET 请求添加时间戳参数 `_t` 防止缓存
 2. 预留 token 认证逻辑（当前未实现）
 
 **代码：**
+
 ```javascript
 request.interceptors.request.use((config) => {
-  if (config.method === 'get' && !config.skipCacheTTL) {
-    config.params = {
-      ...config.params,
-      _t: Date.now(),
-    }
-  }
+	if (config.method === 'get' && !config.skipCacheTTL) {
+		config.params = {
+			...config.params,
+			_t: Date.now(),
+		}
+	}
 
-  // 预留 token 认证
-  // const token = localStorage.getItem('token')
-  // if (token) {
-  //   config.headers.Authorization = `Bearer ${token}`
-  // }
+	// 预留 token 认证
+	// const token = localStorage.getItem('token')
+	// if (token) {
+	//   config.headers.Authorization = `Bearer ${token}`
+	// }
 
-  return config
+	return config
 })
 ```
 
 ### 响应拦截器
 
 **功能：**
+
 1. 统一处理响应数据格式：`{ code: 200, message: '操作成功', data: ... }`
 2. 自动显示错误提示
 3. 处理 HTTP 状态码错误（400/401/403/404/500）
@@ -80,13 +83,13 @@ request.interceptors.request.use((config) => {
 
 **错误码映射：**
 
-| 状态码 | 提示信息 |
-|--------|----------|
-| 400 | 请求参数错误 |
-| 401 | 未授权，请重新登录 |
-| 403 | 拒绝访问 |
-| 404 | 请求的资源不存在 |
-| 500 | 服务器内部错误 |
+| 状态码 | 提示信息           |
+| ------ | ------------------ |
+| 400    | 请求参数错误       |
+| 401    | 未授权，请重新登录 |
+| 403    | 拒绝访问           |
+| 404    | 请求的资源不存在   |
+| 500    | 服务器内部错误     |
 
 ### 使用方式
 
@@ -94,19 +97,19 @@ request.interceptors.request.use((config) => {
 import request from '@/utils/request'
 
 export function getData(params) {
-  return request({
-    url: '/endpoint',
-    method: 'get',
-    params,
-  })
+	return request({
+		url: '/endpoint',
+		method: 'get',
+		params,
+	})
 }
 
 export function postData(data) {
-  return request({
-    url: '/endpoint',
-    method: 'post',
-    data,
-  })
+	return request({
+		url: '/endpoint',
+		method: 'post',
+		data,
+	})
 }
 ```
 
@@ -127,9 +130,11 @@ export function postData(data) {
 从多个音频源中选择最佳质量
 
 **参数：**
+
 - `audioSources` (Array) - 音频源数组
 
 **音频源结构：**
+
 ```javascript
 {
   format: string,    // 音频格式（mp3, flac, wav 等）
@@ -139,46 +144,44 @@ export function postData(data) {
 ```
 
 **选择优先级：**
+
 1. lossless（无损） > high（高品质） > standard（标准） > low（低品质）
 2. 格式优先级：flac > wav > mp3 > aac
 
 **返回：** 最佳音频源对象
 
 **代码：**
+
 ```javascript
 export function selectBestAudioSource(audioSources) {
-  if (!audioSources || audioSources.length === 0) {
-    return null
-  }
+	if (!audioSources || audioSources.length === 0) {
+		return null
+	}
 
-  // 定义质量优先级
-  const qualityPriority = {
-    lossless: 4,
-    high: 3,
-    standard: 2,
-    low: 1,
-  }
+	// 定义质量优先级
+	const qualityPriority = {
+		lossless: 4,
+		high: 3,
+		standard: 2,
+		low: 1,
+	}
 
-  // 定义格式优先级
-  const formatPriority = {
-    flac: 4,
-    wav: 3,
-    mp3: 2,
-    aac: 1,
-  }
+	// 定义格式优先级
+	const formatPriority = {
+		flac: 4,
+		wav: 3,
+		mp3: 2,
+		aac: 1,
+	}
 
-  // 按优先级排序
-  return audioSources.sort((a, b) => {
-    const qualityDiff =
-      (qualityPriority[b.quality] || 0) -
-      (qualityPriority[a.quality] || 0)
+	// 按优先级排序
+	return audioSources.sort((a, b) => {
+		const qualityDiff = (qualityPriority[b.quality] || 0) - (qualityPriority[a.quality] || 0)
 
-    if (qualityDiff !== 0) return qualityDiff
+		if (qualityDiff !== 0) return qualityDiff
 
-    return (
-      (formatPriority[b.format] || 0) - (formatPriority[a.format] || 0)
-    )
-  })[0]
+		return (formatPriority[b.format] || 0) - (formatPriority[a.format] || 0)
+	})[0]
 }
 ```
 
@@ -188,9 +191,9 @@ export function selectBestAudioSource(audioSources) {
 import { selectBestAudioSource } from '@/utils/audioFormat'
 
 const audioSources = [
-  { format: 'mp3', quality: 'standard', url: '...' },
-  { format: 'flac', quality: 'lossless', url: '...' },
-  { format: 'aac', quality: 'low', url: '...' },
+	{ format: 'mp3', quality: 'standard', url: '...' },
+	{ format: 'flac', quality: 'lossless', url: '...' },
+	{ format: 'aac', quality: 'low', url: '...' },
 ]
 
 const bestSource = selectBestAudioSource(audioSources)
@@ -214,11 +217,13 @@ const bestSource = selectBestAudioSource(audioSources)
 合并 CSS 类名，基于 `clsx` 和 `tailwind-merge` 实现
 
 **参数：**
+
 - `...classes` - 类名（字符串、对象、数组）
 
 **返回：** 合并后的类名字符串
 
 **使用示例：**
+
 ```javascript
 import { cn } from '@/utils'
 
@@ -228,8 +233,8 @@ cn('text-red-500', 'bg-blue-500')
 
 // 条件类名
 cn('base-class', {
-  'text-red-500': isError,
-  'text-green-500': isSuccess
+	'text-red-500': isError,
+	'text-green-500': isSuccess,
 })
 
 // 数组
@@ -255,11 +260,11 @@ cn('text-red-500 text-blue-500', 'text-red-500')
 import request from '@/utils/request'
 
 export function getMusicList(params) {
-  return request({
-    url: '/music/list',
-    method: 'get',
-    params,
-  })
+	return request({
+		url: '/music/list',
+		method: 'get',
+		params,
+	})
 }
 ```
 
@@ -270,13 +275,13 @@ export function getMusicList(params) {
 import { selectBestAudioSource } from '@/utils/audioFormat'
 
 export const usePlayerStore = defineStore('player', () => {
-  function playTrack(track) {
-    if (track.audioSources && track.audioSources.length > 0) {
-      currentAudioSource.value = selectBestAudioSource(track.audioSources)
-    }
-  }
+	function playTrack(track) {
+		if (track.audioSources && track.audioSources.length > 0) {
+			currentAudioSource.value = selectBestAudioSource(track.audioSources)
+		}
+	}
 
-  return { playTrack }
+	return { playTrack }
 })
 ```
 
@@ -284,9 +289,7 @@ export const usePlayerStore = defineStore('player', () => {
 
 ```vue
 <template>
-  <div :class="cn('base-class', { 'active-class': isActive })">
-    Content
-  </div>
+	<div :class="cn('base-class', { 'active-class': isActive })">Content</div>
 </template>
 
 <script setup>

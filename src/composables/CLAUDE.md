@@ -55,12 +55,12 @@ src/composables/
 let audioInstance = null
 
 function getAudioInstance() {
-  if (!audioInstance) {
-    audioInstance = new Audio()
-    audioInstance.preload = 'auto'
-    setupAudioListeners()
-  }
-  return audioInstance
+	if (!audioInstance) {
+		audioInstance = new Audio()
+		audioInstance.preload = 'auto'
+		setupAudioListeners()
+	}
+	return audioInstance
 }
 ```
 
@@ -74,16 +74,16 @@ function getAudioInstance() {
 
 #### 3. 完整的事件处理
 
-| 事件 | 处理逻辑 |
-|------|----------|
-| `timeupdate` | 更新当前播放时间 |
-| `ended` | 自动播放下一曲 |
+| 事件             | 处理逻辑                 |
+| ---------------- | ------------------------ |
+| `timeupdate`     | 更新当前播放时间         |
+| `ended`          | 自动播放下一曲           |
 | `loadedmetadata` | 更新总时长，结束加载状态 |
-| `canplay` | 结束加载状态 |
-| `loadstart` | 开始加载状态 |
-| `error` | 错误处理和重试机制 |
-| `pause` | 同步播放状态 |
-| `play` | 同步播放状态 |
+| `canplay`        | 结束加载状态             |
+| `loadstart`      | 开始加载状态             |
+| `error`          | 错误处理和重试机制       |
+| `pause`          | 同步播放状态             |
+| `play`           | 同步播放状态             |
 
 #### 4. 错误重试机制
 
@@ -93,12 +93,12 @@ function getAudioInstance() {
 const MAX_RETRIES = 3
 
 if (error.code === error.MEDIA_ERR_NETWORK) {
-  if (retryCount.value < MAX_RETRIES) {
-    retryCount.value++
-    setTimeout(() => {
-      loadAndPlay()
-    }, 1000)
-  }
+	if (retryCount.value < MAX_RETRIES) {
+		retryCount.value++
+		setTimeout(() => {
+			loadAndPlay()
+		}, 1000)
+	}
 }
 ```
 
@@ -159,8 +159,8 @@ toast.warning('请注意')
 
 // 自定义选项
 toast.success('操作成功', {
-  duration: 3000,  // 持续时间（毫秒）
-  position: 'top', // 位置
+	duration: 3000, // 持续时间（毫秒）
+	position: 'top', // 位置
 })
 ```
 
@@ -205,13 +205,13 @@ const searchKeyword = ref('')
 
 // 创建防抖搜索函数
 const debouncedSearch = useDebounce((keyword) => {
-  musicStore.setSearchKeyword(keyword)
-  musicStore.fetchMusicList()
+	musicStore.setSearchKeyword(keyword)
+	musicStore.fetchMusicList()
 }, 500)
 
 // 监听输入变化，调用防抖函数
 watch(searchKeyword, (newKeyword) => {
-  debouncedSearch(newKeyword)
+	debouncedSearch(newKeyword)
 })
 </script>
 ```

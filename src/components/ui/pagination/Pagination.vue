@@ -1,5 +1,24 @@
 <template>
 	<div :class="cn('flex items-center justify-center gap-2', props.class)" v-bind="$attrs">
+		<!-- 上一页按钮 -->
+		<button
+			@click="handlePrevPage"
+			:disabled="currentPage === 1"
+			:class="
+				cn(
+					'h-9 px-3 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors',
+					'border border-input bg-background shadow-sm',
+					currentPage === 1
+						? 'opacity-50 cursor-not-allowed'
+						: 'hover:bg-accent hover:text-accent-foreground'
+				)
+			"
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<polyline points="15 18 9 12 15 6"></polyline>
+			</svg>
+		</button>
+
 		<!-- 页码列表 -->
 		<template v-for="page in displayedPages" :key="page">
 			<!-- 省略号 -->
@@ -21,6 +40,25 @@
 				{{ page }}
 			</button>
 		</template>
+
+		<!-- 下一页按钮 -->
+		<button
+			@click="handleNextPage"
+			:disabled="currentPage === totalPages"
+			:class="
+				cn(
+					'h-9 px-3 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors',
+					'border border-input bg-background shadow-sm',
+					currentPage === totalPages
+						? 'opacity-50 cursor-not-allowed'
+						: 'hover:bg-accent hover:text-accent-foreground'
+				)
+			"
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<polyline points="9 18 15 12 9 6"></polyline>
+			</svg>
+		</button>
 
 		<!-- 总页数显示 -->
 		<div class="ml-2 flex items-center gap-1 text-sm text-muted-foreground">
@@ -59,45 +97,92 @@ const totalPages = computed(() => {
 	return Math.ceil(props.total / props.pageSize) || 1
 })
 
+/**
+ * 计算显示的页码列表
+ * 逻辑：始终显示第1页和最后一页，当前页前后各显示2页，用省略号连接
+ */
 const displayedPages = computed(() => {
 	const pages = []
 	const current = props.currentPage
 	const total = totalPages.value
 
-	if (total <= 5) {
-		// 总页数小于等于5，显示所有页码
+	// 总页数 <= 7，显示所有页码
+	if (total <= 7) {
 		for (let i = 1; i <= total; i++) {
 			pages.push(i)
 		}
-	} else if (current <= 3) {
-		// 当前页在前面，显示：1, 2, 3, 4, ..., total
-		for (let i = 1; i <= 4; i++) {
-			pages.push(i)
-		}
-		pages.push('...')
-		pages.push(total)
-	} else if (current >= total - 2) {
-		// 当前页在后面，显示：1, ..., total-3, total-2, total-1, total
-		pages.push(1)
-		pages.push('...')
-		for (let i = total - 3; i <= total; i++) {
-			pages.push(i)
-		}
-	} else {
-		// 当前页在中间，显示：1, 2, ..., current, ..., total
-		pages.push(1)
-		pages.push(2)
-		pages.push('...')
-		pages.push(current)
-		pages.push('...')
-		pages.push(total)
+		return pages
 	}
+
+	// 总是添加第1页
+	pages.push(1)
+
+	// 计算当前页周围需要显示的页码范围（前后各2页）
+	let startPage = Math.max(2, current - 2)
+	let endPage = Math.min(total - 1, current + 2)
+
+	// 如果当前页靠近开头，多显示几页
+	if (current <= 4) {
+		startPage = 2
+		endPage = 5
+	}
+
+	// 如果当前页靠近结尾，多显示几页
+	if (current >= total - 3) {
+		startPage = total - 4
+		endPage = total - 1
+	}
+
+	// 添加左侧省略号（如果需要）
+	if (startPage > 2) {
+		pages.push('...')
+	}
+
+	// 添加中间页码
+	for (let i = startPage; i <= endPage; i++) {
+		pages.push(i)
+	}
+
+	// 添加右侧省略号（如果需要）
+	if (endPage < total - 1) {
+		pages.push('...')
+	}
+
+	// 总是添加最后一页
+	pages.push(total)
 
 	return pages
 })
 
+/**
+ * 页码点击事件
+ */
 const handlePageClick = (page) => {
-	emit('update:currentPage', page)
-	emit('pageChange', page)
+	if (page !== props.currentPage) {
+		emit('update:currentPage', page)
+		emit('pageChange', page)
+	}
+}
+
+/**
+ * 上一页
+ */
+const handlePrevPage = () => {
+	if (props.currentPage > 1) {
+		const prevPage = props.currentPage - 1
+		emit('update:currentPage', prevPage)
+		emit('pageChange', prevPage)
+	}
+}
+
+/**
+ * 下一页
+ */
+const handleNextPage = () => {
+	if (props.currentPage < totalPages.value) {
+		const nextPage = props.currentPage + 1
+		emit('update:currentPage', nextPage)
+		emit('pageChange', nextPage)
+	}
 }
 </script>

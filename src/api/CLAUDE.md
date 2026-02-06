@@ -33,6 +33,7 @@ src/api/
 分页查询音乐列表
 
 **参数：**
+
 - `pageNum` (number) - 页码，默认 1
 - `pageSize` (number) - 每页大小，默认 10
 - `categoryId` (number, 可选) - 分类ID
@@ -41,6 +42,7 @@ src/api/
 - `sortOrder` (string) - 排序方式（asc/desc），默认 'desc'
 
 **返回：**
+
 ```javascript
 {
   records: Array,   // 音乐列表
@@ -56,9 +58,11 @@ src/api/
 获取音乐详情
 
 **参数：**
+
 - `id` (number) - 音乐ID
 
 **返回：**
+
 ```javascript
 {
   id: number,
@@ -79,6 +83,7 @@ src/api/
 收藏音乐
 
 **参数：**
+
 - `musicId` (number) - 音乐ID
 
 **返回：** 操作结果
@@ -88,6 +93,7 @@ src/api/
 取消收藏
 
 **参数：**
+
 - `musicId` (number) - 音乐ID
 
 **返回：** 操作结果
@@ -97,10 +103,12 @@ src/api/
 查询收藏列表
 
 **参数：**
+
 - `pageNum` (number) - 页码，默认 1
 - `pageSize` (number) - 每页大小，默认 10
 
 **返回：**
+
 ```javascript
 {
   records: Array,   // 收藏列表（包含 musicId 字段）
@@ -120,12 +128,14 @@ src/api/
 获取音频访问 URL
 
 **参数：**
+
 - `id` (number) - 音乐ID
 
 **返回：**
+
 ```javascript
 {
-  audioUrl: string  // 音频文件访问URL
+	audioUrl: string // 音频文件访问URL
 }
 ```
 
@@ -164,9 +174,9 @@ import { addFavorite, removeFavorite } from '@/api/favorite'
 
 // 获取音乐列表
 const response = await getMusicList({
-  pageNum: 1,
-  pageSize: 12,
-  keyword: '周杰伦'
+	pageNum: 1,
+	pageSize: 12,
+	keyword: '周杰伦',
 })
 
 // 获取音乐详情
@@ -186,12 +196,12 @@ import { defineStore } from 'pinia'
 import { getMusicList } from '@/api/music'
 
 export const useMusicStore = defineStore('music', () => {
-  async function fetchMusicList() {
-    const response = await getMusicList({ pageNum: 1, pageSize: 12 })
-    // 处理响应数据
-  }
+	async function fetchMusicList() {
+		const response = await getMusicList({ pageNum: 1, pageSize: 12 })
+		// 处理响应数据
+	}
 
-  return { fetchMusicList }
+	return { fetchMusicList }
 })
 ```
 
