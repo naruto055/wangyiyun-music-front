@@ -1,9 +1,9 @@
 # API 接口层文档
 
-[🏠 返回根目录](../CLAUDE.md)
+[🏠 返回根目录](../../CLAUDE.md)
 
 > **模块路径：** `src/api/`
-> **最后更新：** 2026-01-29
+> **最后更新：** 2026-02-07
 
 ---
 
@@ -19,7 +19,8 @@ API 层负责与后端服务器通信，封装所有 HTTP 请求。基于 Axios 
 src/api/
 ├── music.js      # 音乐管理接口
 ├── favorite.js   # 收藏管理接口
-└── audio.js      # 音频管理接口
+├── audio.js      # 音频管理接口
+└── video.js      # 视频解析接口 (NEW)
 ```
 
 ---
@@ -141,6 +142,73 @@ src/api/
 
 ---
 
+### 4. 视频解析接口 (video.js) - NEW
+
+#### `parseVideo(data)`
+
+解析视频并提取音频
+
+**参数：**
+
+```javascript
+{
+  videoUrl: string,    // 视频链接或分享文本（支持B站原始分享链接）
+  platform: string     // 平台类型（BILIBILI/YOUTUBE/DOUYIN）
+}
+```
+
+**返回：**
+
+```javascript
+{
+  sourceVideoId: string,    // 源视频ID（如 BV1xxx）
+  platform: string,         // 平台类型（BILIBILI/YOUTUBE）
+  title: string,            // 标题
+  audioUrl: string,         // 音频访问URL
+  audioFormat: string,      // 音频格式（mp3/m4a）
+  coverUrl: string,         // 封面图URL
+  duration: number,         // 时长（秒）
+  fileSize: number,         // 文件大小（字节）
+  expiresAt: string         // 过期时间（1小时后）
+}
+```
+
+**示例：**
+
+```javascript
+import { parseVideo } from '@/api/video'
+
+const result = await parseVideo({
+  videoUrl: 'https://www.bilibili.com/video/BV1xxx',
+  platform: 'BILIBILI'
+})
+```
+
+**注意事项：**
+
+- 音频文件临时存储，1 小时后自动删除
+- 支持 URL、BV号、分享文本等多种输入格式
+- 文件大小限制：单文件不超过 100MB
+- 存储容量限制：临时目录总容量不超过 1GB
+
+#### `getSupportedPlatforms()`
+
+获取支持的平台列表
+
+**返回：**
+
+```javascript
+[
+  {
+    platform: string,   // 平台标识（如 'BILIBILI'）
+    name: string,       // 平台名称
+    enabled: boolean    // 是否启用
+  }
+]
+```
+
+---
+
 ## 🔄 请求拦截器
 
 所有 API 请求都通过 [src/utils/request.js](../utils/request.js) 统一处理：
@@ -171,6 +239,7 @@ src/api/
 ```javascript
 import { getMusicList, getMusicDetail } from '@/api/music'
 import { addFavorite, removeFavorite } from '@/api/favorite'
+import { parseVideo } from '@/api/video'
 
 // 获取音乐列表
 const response = await getMusicList({
@@ -187,6 +256,12 @@ await addFavorite(123)
 
 // 取消收藏
 await removeFavorite(123)
+
+// 解析视频
+const result = await parseVideo({
+  videoUrl: 'https://www.bilibili.com/video/BV1xxx',
+  platform: 'BILIBILI'
+})
 ```
 
 ### 在 Store 中使用
@@ -213,6 +288,10 @@ export const useMusicStore = defineStore('music', () => {
 2. **超时时间**：默认 10 秒
 3. **错误处理**：接口调用失败时会自动显示 Toast 错误提示
 4. **用户 ID**：收藏功能当前使用固定用户 ID（USER_ID = 0），后续需要实现动态用户认证
+5. **视频解析**：
+   - 解析后的音频文件为临时文件，1 小时后自动删除
+   - 前端应妥善处理文件过期、解析失败等异常情况
+   - 建议在播放前检查音频 URL 的有效性
 
 ---
 
@@ -223,7 +302,8 @@ export const useMusicStore = defineStore('music', () => {
 - [ ] 添加请求重试机制
 - [ ] 完善用户认证 token 管理
 - [ ] 添加接口请求日志记录
+- [ ] 优化视频解析接口的错误处理和重试逻辑
 
 ---
 
-**生成时间：** 2026-01-29
+**生成时间：** 2026-02-07

@@ -1,12 +1,21 @@
 # 网易云音乐前端项目
 
-> **最后更新：** 2026-02-01
+> **最后更新：** 2026-02-07
 > **项目状态：** 开发中
 > **技术栈：** Vue 3 + Vite + Pinia + Tailwind CSS
 
 ---
 
 ## 变更记录 (Changelog)
+
+### 2026-02-07
+- 增量更新项目 AI 上下文文档
+- 发现新增页面：专辑列表（AlbumList.vue）和 B 站音乐搜索（BilibiliSearch.vue）
+- 更新路由配置至 5 个页面
+- 更新模块文档导航链接
+- 优化模块结构图（Mermaid）
+- 更新统计信息：页面数量从 3 个增至 5 个
+- 更新覆盖率报告（94% 覆盖率）
 
 ### 2026-02-01
 - 增量更新项目 AI 上下文文档
@@ -34,14 +43,16 @@
 
 ## 📋 项目概览
 
-网易云音乐前端应用，基于 Vue 3 生态构建的现代化 SPA 单页应用，提供音乐浏览、收藏管理、在线播放和视频解析功能。
+网易云音乐前端应用，基于 Vue 3 生态构建的现代化 SPA 单页应用，提供音乐浏览、收藏管理、在线播放、视频解析和 B 站音乐搜索功能。
 
 ### 核心特性
 
 - ✅ **音乐浏览** - 分页浏览音乐列表，支持关键词搜索
 - ✅ **收藏管理** - 收藏/取消收藏音乐，查看收藏列表
+- ✅ **专辑浏览** - 浏览专辑列表和专辑详情
 - ✅ **音乐播放** - 完整的播放控制功能，支持多种播放模式
 - ✅ **视频解析** - 支持 B 站视频解析并提取音频（NEW）
+- ✅ **B 站音乐搜索** - 搜索 B 站视频并保存为音乐（NEW）
 - ✅ **响应式设计** - 基于 Tailwind CSS 的现代化 UI
 - ✅ **组件化开发** - 完善的 UI 组件库和业务组件
 
@@ -55,7 +66,7 @@
 graph TD
     Root["(根) wangyiyun-music-front<br/>网易云音乐前端"]
 
-    Root --> Views["views<br/>页面视图（3个）"]
+    Root --> Views["views<br/>页面视图（5个）"]
     Root --> Components["components<br/>组件库（28个）"]
     Root --> Stores["stores<br/>状态管理（3个）"]
     Root --> Composables["composables<br/>可组合函数（3个）"]
@@ -64,7 +75,7 @@ graph TD
     Root --> Router["router<br/>路由配置（1个）"]
     Root --> Entry["入口<br/>App.vue + main.js"]
 
-    Views --> ViewsModules["MusicList.vue<br/>FavoriteList.vue<br/>VideoParser.vue (NEW)"]
+    Views --> ViewsModules["MusicList.vue<br/>FavoriteList.vue<br/>AlbumList.vue<br/>VideoParser.vue (NEW)<br/>BilibiliSearch.vue (NEW)"]
 
     Components --> UI["ui<br/>UI 组件库"]
     Components --> Player["player<br/>播放器组件"]
@@ -80,8 +91,8 @@ graph TD
     Utils --> UtilsModules["request.js<br/>audioFormat.js<br/>index.js"]
 
     click Views "#-功能模块" "查看页面视图"
-    click Components "#4-ui-组件库" "查看组件库"
-    click Stores "#-状态管理" "查看状态管理"
+    click Components "src/components/ui/CLAUDE.md" "查看组件库"
+    click Stores "src/stores/CLAUDE.md" "查看状态管理"
     click Composables "src/composables/CLAUDE.md" "查看可组合函数文档"
     click API "src/api/CLAUDE.md" "查看 API 文档"
 
@@ -137,12 +148,14 @@ wangyiyun-music-front/
 │   │   ├── request.js    # Axios 封装
 │   │   ├── audioFormat.js # 音频格式处理
 │   │   └── index.js      # 工具函数导出
-│   ├── views/            # 页面视图（3个）
-│   │   ├── MusicList.vue   # 音乐列表页
-│   │   ├── FavoriteList.vue # 收藏列表页
-│   │   └── VideoParser.vue # 视频解析页 (NEW)
+│   ├── views/            # 页面视图（5个）
+│   │   ├── MusicList.vue      # 音乐列表页
+│   │   ├── FavoriteList.vue   # 收藏列表页
+│   │   ├── AlbumList.vue      # 专辑列表页
+│   │   ├── VideoParser.vue    # 视频解析页 (NEW)
+│   │   └── BilibiliSearch.vue # B站音乐搜索页 (NEW)
 │   ├── router/           # 路由配置
-│   │   └── index.js      # 路由定义（3个路由）
+│   │   └── index.js      # 路由定义（5个路由）
 │   ├── App.vue           # 根组件
 │   └── main.js           # 应用入口
 ├── public/               # 静态资源
@@ -161,66 +174,75 @@ graph TB
     subgraph "视图层 Presentation Layer"
         A[MusicList.vue]
         B[FavoriteList.vue]
-        C[VideoParser.vue - NEW]
+        C[AlbumList.vue]
+        D[VideoParser.vue - NEW]
+        E[BilibiliSearch.vue - NEW]
     end
 
     subgraph "组件层 Component Layer"
-        D[PlayerBar 播放器栏]
-        E[Header 导航头]
-        F[UI 组件库]
-        G[MusicCard 音乐卡片]
+        F[PlayerBar 播放器栏]
+        G[Header 导航头]
+        H[UI 组件库]
+        I[MusicCard 音乐卡片]
     end
 
     subgraph "状态管理层 State Layer"
-        H[player.js 播放器状态]
-        I[music.js 音乐状态]
-        J[favorite.js 收藏状态]
+        J[player.js 播放器状态]
+        K[music.js 音乐状态]
+        L[favorite.js 收藏状态]
     end
 
     subgraph "业务逻辑层 Business Layer"
-        K[useAudioPlayer 音频播放]
-        L[useToast Toast 提示]
-        M[useDebounce 防抖]
+        M[useAudioPlayer 音频播放]
+        N[useToast Toast 提示]
+        O[useDebounce 防抖]
     end
 
     subgraph "数据层 Data Layer"
-        N[request.js Axios]
-        O[api/music.js 音乐API]
-        P[api/favorite.js 收藏API]
-        Q[api/audio.js 音频API]
-        R[api/video.js 视频API - NEW]
+        P[request.js Axios]
+        Q[api/music.js 音乐API]
+        R[api/favorite.js 收藏API]
+        S[api/audio.js 音频API]
+        T[api/video.js 视频API - NEW]
     end
 
-    A --> F
-    B --> F
-    C --> F
-    A --> G
-    B --> G
-
-    A --> I
-    B --> J
+    A --> H
+    B --> H
     C --> H
     D --> H
-    E --> I
+    E --> H
+    A --> I
+    B --> I
+    C --> I
 
-    D --> K
-    K --> H
+    A --> K
+    B --> L
+    C --> K
+    D --> J
+    E --> J
+    F --> J
+    G --> K
 
-    I --> O
-    J --> P
-    H --> Q
-    C --> R
+    F --> M
+    M --> J
 
-    O --> N
-    P --> N
-    Q --> N
-    R --> N
+    K --> Q
+    L --> R
+    J --> S
+    D --> T
+    E --> T
 
-    L -.-> F
-    M -.-> A
+    Q --> P
+    R --> P
+    S --> P
+    T --> P
 
-    style C fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    style R fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    N -.-> H
+    O -.-> A
+
+    style D fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style E fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style T fill:#fff3e0,stroke:#f57c00,stroke-width:2px
 ```
 
 ---
@@ -305,7 +327,23 @@ npm run format:check
 
 ---
 
-### 3. 音乐播放器模块
+### 3. 专辑列表模块
+
+**路由：** `/albums`
+
+**功能：**
+- 浏览专辑列表
+- 查看专辑详情
+- 播放专辑中的歌曲
+
+**相关文件：**
+- [src/views/AlbumList.vue](src/views/AlbumList.vue)
+
+**文档：** [src/views/CLAUDE.md](src/views/CLAUDE.md)
+
+---
+
+### 4. 音乐播放器模块
 
 **功能：**
 - 播放/暂停控制
@@ -331,7 +369,7 @@ npm run format:check
 
 ---
 
-### 4. 视频解析模块 (NEW)
+### 5. 视频解析模块 (NEW)
 
 **路由：** `/video-parser`
 
@@ -362,7 +400,25 @@ npm run format:check
 
 ---
 
-### 5. UI 组件库
+### 6. B 站音乐搜索模块 (NEW)
+
+**路由：** `/bilibili-search`
+
+**功能：**
+- 搜索 B 站视频（支持关键词和 BV 号）
+- 显示搜索结果列表
+- 在线播放音频
+- 保存为音乐到本地库
+- 搜索历史记录
+
+**相关文件：**
+- [src/views/BilibiliSearch.vue](src/views/BilibiliSearch.vue)
+- [src/api/video.js](src/api/video.js)
+- [src/stores/player.js](src/stores/player.js)
+
+---
+
+### 7. UI 组件库
 
 基于 Radix Vue 和 Tailwind CSS 构建的无障碍 UI 组件。
 
@@ -781,6 +837,7 @@ response.interceptors.use(
 - [ ] 优化移动端适配
 - [ ] 完善视频解析功能（YouTube、抖音支持）
 - [ ] 补充工具函数、路由、播放器组件的模块文档
+- [ ] 为 AlbumList.vue 和 BilibiliSearch.vue 添加详细文档
 
 ---
 
@@ -804,9 +861,9 @@ response.interceptors.use(
 
 ### 统计信息
 
-- **源文件总数**：48个
+- **源文件总数**：51个
 - **模块数量**：8个
-- **页面数量**：3个
+- **页面数量**：5个
 - **组件数量**：28个
 - **API 接口数量**：4个
 - **Store 数量**：3个
@@ -815,26 +872,28 @@ response.interceptors.use(
 ### 覆盖率报告
 
 - **扫描策略**：自适应混合（轻量清点 + 模块优先扫描）
-- **总文件估算**：52个
-- **已扫描文件**：48个
-- **覆盖率**：92%
-- **忽略模式**：`node_modules/**, dist/**, dist-ssr/**, *.local, .vscode/**, .idea/**`
+- **总文件估算**：54个
+- **已扫描文件**：51个
+- **覆盖率**：94%
+- **忽略模式**：`node_modules/**, dist/**, dist-ssr/**, *.local, .vscode/**, .idea/**, _bmad-output/**`
 
 ### 主要缺口
 
 - **缺少测试**：src/api/**, src/components/**, src/composables/**, src/stores/**, src/utils/**, src/views/**
 - **缺少文档**：src/utils/CLAUDE.md, src/router/CLAUDE.md, src/components/player/CLAUDE.md
+- **新增页面待文档化**：AlbumList.vue, BilibiliSearch.vue
 
 ### 推荐下一步
 
 1. 补充单元测试（建议覆盖率 > 70%）
-2. 为新增的视频解析功能添加端到端测试
+2. 为新增的视频解析功能和 B 站搜索功能添加端到端测试
 3. 补充工具函数、路由、播放器组件的模块文档
-4. 添加 ESLint 配置以增强代码质量检查
-5. 优化移动端适配与响应式设计
-6. 实现用户认证功能（对接后端）
-7. 添加歌词显示功能
-8. 实现播放列表持久化
+4. 为 AlbumList.vue 和 BilibiliSearch.vue 编写详细文档
+5. 添加 ESLint 配置以增强代码质量检查
+6. 优化移动端适配与响应式设计
+7. 实现用户认证功能（对接后端）
+8. 添加歌词显示功能
+9. 实现播放列表持久化
 
 ---
 
@@ -850,6 +909,6 @@ MIT
 
 ---
 
-**最后更新：** 2026-02-01 16:01:33
-**文档版本：** 1.2.0
+**最后更新：** 2026-02-07 00:05:33
+**文档版本：** 1.3.0
 **生成方式：** AI 自动生成并增量更新
