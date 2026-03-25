@@ -292,7 +292,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import axios from 'axios'
 import { parseVideo } from '@/api/video'
 import { usePlayerStore } from '@/stores/player'
@@ -315,6 +315,11 @@ const error = ref(null)
 // 加载阶段提示
 const loadingStages = ['正在解析视频信息...', '提取音频流...', '处理音频数据...', '即将完成...']
 const currentStage = ref('')
+
+// 监听平台切换，清空输入框
+watch(platform, () => {
+	videoUrl.value = ''
+})
 
 // 计算属性
 const inputPlaceholder = computed(() => {
