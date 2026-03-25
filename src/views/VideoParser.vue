@@ -364,9 +364,8 @@ async function handleParse() {
 
 		toast.success('解析成功，音频已准备就绪')
 	} catch (err) {
+		// 只设置错误状态，错误提示已由 request.js 统一处理
 		error.value = err.message || '解析失败,请重试'
-
-		toast.error('解析失败: ' + error.value)
 	} finally {
 		isLoading.value = false
 		clearInterval(stageInterval)

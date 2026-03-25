@@ -33,13 +33,12 @@ function removeToast(id) {
 <style scoped>
 .toast-container {
 	position: fixed;
-	top: 0;
-	right: 0;
-	z-index: 50;
+	top: 20px;
+	right: 20px;
+	z-index: 9999;
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
-	padding: 16px;
+	gap: 12px;
 	pointer-events: none;
 }
 
