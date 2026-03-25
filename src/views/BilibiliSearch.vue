@@ -190,6 +190,7 @@ import { searchBilibiliVideos, getSearchHistory, clearSearchHistory as clearSear
 import { parseVideo } from '@/api/video'
 import { useToast } from '@/composables/useToast'
 import { useDebounceFn } from '@/composables/useDebounce'
+import { confirmWarning } from '@/composables/useConfirm'
 import { usePlayerStore } from '@/stores/player'
 import { adaptVideoToTrack } from '@/utils/trackAdapter'
 import Header from '@/components/layout/Header.vue'
@@ -348,7 +349,10 @@ function handleHistoryClick(keyword) {
  * 清空搜索历史
  */
 async function handleClearHistory() {
-	if (!confirm('确定要清空所有搜索历史吗？')) {
+	try {
+		await confirmWarning('确定要清空所有搜索历史吗？', '清空确认')
+	} catch {
+		// 用户取消操作
 		return
 	}
 
