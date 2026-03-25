@@ -389,14 +389,24 @@ function handlePlay() {
 async function handleDownload() {
 	if (!parseResult.value) return
 
-	toast.info('准备下载，正在获取音频文件...')
-
 	try {
-		// 使用 axios 下载音频（后端已配置 CORS）
+		// 检查文件是否过期
+		const expiresAt = new Date(parseResult.value.expiresAt)
+		if (expiresAt < new Date()) {
+			toast.error('音频文件已过期,请重新解析')
+			return
+		}
+
+		toast.info('准备下载，正在获取音频文件...')
+
+		// 通过 Vite 代理下载（自动处理 CORS 和防盗链）
+		// 提取音频路径：http://localhost:8910/temp-audio/xxx.mp3 -> /temp-audio/xxx.mp3
+		const audioPath = parseResult.value.audioUrl.replace(/^https?:\/\/[^/]+/, '')
+
 		const response = await axios({
-			url: parseResult.value.audioUrl,
+			url: audioPath, // 直接使用相对路径，Vite 会自动代理
 			method: 'GET',
-			responseType: 'blob', // 关键：返回二进制数据
+			responseType: 'blob',
 		})
 
 		// 创建 Object URL 触发下载
@@ -415,7 +425,8 @@ async function handleDownload() {
 		toast.success('下载成功，音频文件已保存')
 	} catch (err) {
 		console.error('下载失败:', err)
-		toast.error('下载失败: ' + (err.message || '请稍后重试'))
+		const errorMsg = err.response?.status === 403 ? '无权限访问该文件' : err.message || '请稍后重试'
+		toast.error('下载失败: ' + errorMsg)
 	}
 }
 

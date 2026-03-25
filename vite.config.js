@@ -18,6 +18,11 @@ export default defineConfig({
         target: 'http://localhost:8910',
         changeOrigin: true,
         rewrite: (path) => path
+      },
+      // 临时音频文件代理（视频解析提取的音频）
+      '/temp-audio': {
+        target: 'http://localhost:8910',
+        changeOrigin: true
       }
     }
   }
