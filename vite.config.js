@@ -5,25 +5,30 @@ import { fileURLToPath, URL } from 'node:url'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue(), tailwindcss()],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
-    }
-  },
-  server: {
-    port: 5173,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8910',
-        changeOrigin: true,
-        rewrite: (path) => path
-      },
-      // 临时音频文件代理（视频解析提取的音频）
-      '/temp-audio': {
-        target: 'http://localhost:8910',
-        changeOrigin: true
-      }
-    }
-  }
+	plugins: [vue(), tailwindcss()],
+	resolve: {
+		alias: {
+			'@': fileURLToPath(new URL('./src', import.meta.url)),
+		},
+	},
+	server: {
+		port: 5173,
+		proxy: {
+			'/api': {
+				target: 'http://localhost:8910',
+				changeOrigin: true,
+				rewrite: (path) => path,
+			},
+			// 临时音频文件代理（视频解析提取的音频）
+			'/temp-audio': {
+				target: 'http://localhost:8910',
+				changeOrigin: true,
+			},
+			// 临时音频文件代理（视频解析提取的音频）
+			'/temp-video': {
+				target: 'http://localhost:8910',
+				changeOrigin: true,
+			},
+		},
+	},
 })

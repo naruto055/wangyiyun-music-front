@@ -118,7 +118,7 @@
 
 				<!-- 成功状态 -->
 				<Card v-else-if="parseResult" class="overflow-hidden border border-primary/20">
-					<!-- 警告横幅 -->
+					<!-- 提示横幅 -->
 					<div class="bg-amber-50 border-l-4 border-amber-500 p-4 flex items-center gap-3">
 						<svg class="w-5 h-5 text-amber-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
 							<path
@@ -128,7 +128,7 @@
 							/>
 						</svg>
 						<p class="text-sm font-medium text-amber-900">
-							⏰ 音频链接将在 <span class="font-bold text-amber-600">1 小时</span> 后失效,请尽快播放或下载
+							{{ parseResult.message || '已完成元数据解析，请按需准备音频或下载视频资源' }}
 						</p>
 					</div>
 
@@ -167,7 +167,7 @@
 										<span>{{ formatDuration(parseResult.duration) }}</span>
 									</div>
 
-									<!-- 文件大小 -->
+									<!-- 平台 -->
 									<div class="flex items-center gap-1.5">
 										<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path
@@ -177,10 +177,10 @@
 												d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
 											/>
 										</svg>
-										<span>{{ formatFileSize(parseResult.fileSize) }}</span>
+										<span>{{ parseResult.platform }}</span>
 									</div>
 
-									<!-- 音频格式 -->
+									<!-- 可用动作 -->
 									<div class="flex items-center gap-1.5">
 										<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path
@@ -190,7 +190,7 @@
 												d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
 											/>
 										</svg>
-										<span class="uppercase">{{ parseResult.audioFormat }}</span>
+										<span>{{ availableActionText }}</span>
 									</div>
 								</div>
 
@@ -202,15 +202,15 @@
 						<!-- 操作按钮组 -->
 						<div class="mt-6 flex flex-col sm:flex-row gap-3">
 							<!-- 立即播放 -->
-							<Button variant="default" size="lg" class="flex-1 h-11" @click="handlePlay">
+							<Button variant="default" size="lg" class="flex-1 h-11" @click="handlePlay" :disabled="isActionLoading || !canPlayAudio">
 								<svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
 									<path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
 								</svg>
-								立即播放
+								{{ activeAction === 'play' ? '准备播放中...' : '立即播放' }}
 							</Button>
 
 							<!-- 下载音频 -->
-							<Button variant="outline" size="lg" class="flex-1 h-11" @click="handleDownload">
+							<Button variant="outline" size="lg" class="flex-1 h-11" @click="handleDownloadAudio" :disabled="isActionLoading || !canDownloadAudio">
 								<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path
 										stroke-linecap="round"
@@ -219,11 +219,26 @@
 										d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
 									/>
 								</svg>
-								下载音频
+								{{ activeAction === 'download-audio' ? '准备音频中...' : '下载音频' }}
+							</Button>
+
+							<!-- 下载视频 -->
+							<Button
+								v-if="canDownloadVideo"
+								variant="outline"
+								size="lg"
+								class="flex-1 h-11"
+								@click="handleDownloadVideo"
+								:disabled="isActionLoading"
+							>
+								<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m0 0l-4-4m4 4l4-4M5 19h14" />
+								</svg>
+								{{ activeAction === 'download-video' ? '准备视频中...' : '下载视频' }}
 							</Button>
 
 							<!-- 重新解析 -->
-							<Button variant="ghost" size="lg" class="sm:w-auto h-11" @click="handleReset">
+							<Button variant="ghost" size="lg" class="sm:w-auto h-11" @click="handleReset" :disabled="isActionLoading">
 								<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path
 										stroke-linecap="round"
@@ -295,7 +310,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import axios from 'axios'
-import { parseVideo } from '@/api/video'
+import { downloadVideo, parseVideo, prepareAudio } from '@/api/video'
 import { usePlayerStore } from '@/stores/player'
 import { useToast } from '@/composables/useToast'
 import { adaptVideoToTrack } from '@/utils/trackAdapter'
@@ -312,14 +327,18 @@ const videoUrl = ref('')
 const isLoading = ref(false)
 const parseResult = ref(null)
 const error = ref(null)
+const activeAction = ref('')
+const preparedAudioResource = ref(null)
+let preparingAudioPromise = null
 
 // 加载阶段提示
-const loadingStages = ['正在解析视频信息...', '提取音频流...', '处理音频数据...', '即将完成...']
+const loadingStages = ['正在解析视频信息...', '正在获取标题与封面...', '正在整理可用动作...', '即将完成...']
 const currentStage = ref('')
 
 // 监听平台切换，清空输入框
 watch(platform, () => {
 	videoUrl.value = ''
+	clearPreparedAudioResource()
 })
 
 // 计算属性
@@ -335,6 +354,34 @@ const canParse = computed(() => {
 	return videoUrl.value.trim().length > 0 && platform.value
 })
 
+const isActionLoading = computed(() => activeAction.value.length > 0)
+
+const availableActionText = computed(() => {
+	if (!parseResult.value?.availableActions?.length) {
+		return '暂无'
+	}
+
+	const actionTextMap = {
+		AUDIO_PREPARE: '可播放音频',
+		AUDIO_DOWNLOAD: '可下载音频',
+		VIDEO_DOWNLOAD: '可下载视频',
+	}
+
+	return parseResult.value.availableActions.map((action) => actionTextMap[action] || action).join(' / ')
+})
+
+const canPlayAudio = computed(() => {
+	return Boolean(parseResult.value?.audioSupported) && hasAvailableAction('AUDIO_PREPARE')
+})
+
+const canDownloadAudio = computed(() => {
+	return Boolean(parseResult.value?.audioSupported) && hasAvailableAction('AUDIO_DOWNLOAD')
+})
+
+const canDownloadVideo = computed(() => {
+	return Boolean(parseResult.value?.videoSupported) && hasAvailableAction('VIDEO_DOWNLOAD')
+})
+
 // 解析视频
 async function handleParse() {
 	if (!videoUrl.value.trim()) {
@@ -345,6 +392,7 @@ async function handleParse() {
 	isLoading.value = true
 	error.value = null
 	parseResult.value = null
+	clearPreparedAudioResource()
 
 	// 启动阶段提示轮播
 	let stageIndex = 0
@@ -358,11 +406,12 @@ async function handleParse() {
 		const data = await parseVideo({
 			videoUrl: videoUrl.value,
 			platform: platform.value,
+			includeAvailableActions: true,
 		})
 
 		parseResult.value = data
 
-		toast.success('解析成功，音频已准备就绪')
+		toast.success('元数据解析成功，可继续播放音频或下载资源')
 	} catch (err) {
 		// 只设置错误状态，错误提示已由 request.js 统一处理
 		error.value = err.message || '解析失败,请重试'
@@ -372,61 +421,172 @@ async function handleParse() {
 	}
 }
 
-// 播放音频
-function handlePlay() {
-	if (!parseResult.value) return
-
-	// 使用适配器将视频解析结果转换为统一的音轨格式
-	const track = adaptVideoToTrack(parseResult.value)
-
-	// 播放音乐
-	playerStore.playTrack(track)
-
-	toast.success('开始播放')
+function hasAvailableAction(action) {
+	return parseResult.value?.availableActions?.includes(action) ?? false
 }
 
-// 下载音频
-async function handleDownload() {
+function buildMediaRequestPayload(extra = {}) {
+	return {
+		videoUrl: parseResult.value?.normalizedVideoUrl || videoUrl.value.trim(),
+		platform: parseResult.value?.platform || platform.value,
+		...extra,
+	}
+}
+
+function clearPreparedAudioResource() {
+	preparedAudioResource.value = null
+	preparingAudioPromise = null
+}
+
+function isPreparedAudioExpired(audioResource) {
+	if (!audioResource?.audioUrl) {
+		return true
+	}
+
+	if (!audioResource.expiresAt) {
+		return false
+	}
+
+	return new Date(audioResource.expiresAt).getTime() <= Date.now()
+}
+
+async function prepareAudioResource(actionType, options = {}) {
+	if (!parseResult.value) return null
+
+	if (!canPlayAudio.value && !canDownloadAudio.value) {
+		toast.warning('当前视频暂不支持音频准备')
+		return null
+	}
+
+	const { forceRefresh = false } = options
+	if (!forceRefresh && preparedAudioResource.value && !isPreparedAudioExpired(preparedAudioResource.value)) {
+		return preparedAudioResource.value
+	}
+
+	if (preparingAudioPromise) {
+		return await preparingAudioPromise
+	}
+
+	activeAction.value = actionType
+	const requestPromise = prepareAudio({
+		...buildMediaRequestPayload(),
+		preferredAudioFormat: 'mp3',
+	})
+		.then((result) => {
+			preparedAudioResource.value = result
+			return result
+		})
+		.finally(() => {
+			if (preparingAudioPromise === requestPromise) {
+				preparingAudioPromise = null
+			}
+			activeAction.value = ''
+		})
+
+	preparingAudioPromise = requestPromise
+	return await requestPromise
+}
+
+async function downloadTemporaryFile(resourceUrl, fileName) {
+	const resourcePath = resourceUrl.replace(/^https?:\/\/[^/]+/, '')
+	const response = await axios({
+		url: resourcePath,
+		method: 'GET',
+		responseType: 'blob',
+	})
+
+	const objectUrl = window.URL.createObjectURL(response.data)
+	const link = document.createElement('a')
+	link.href = objectUrl
+	link.download = fileName
+	link.style.display = 'none'
+	document.body.appendChild(link)
+	link.click()
+	document.body.removeChild(link)
+	window.URL.revokeObjectURL(objectUrl)
+}
+
+// 播放音频
+async function handlePlay() {
 	if (!parseResult.value) return
 
 	try {
-		// 检查文件是否过期
-		const expiresAt = new Date(parseResult.value.expiresAt)
-		if (expiresAt < new Date()) {
-			toast.error('音频文件已过期,请重新解析')
-			return
-		}
+		const audioResult = await prepareAudioResource('play')
+		if (!audioResult) return
 
-		toast.info('准备下载，正在获取音频文件...')
-
-		// 通过 Vite 代理下载（自动处理 CORS 和防盗链）
-		// 提取音频路径：http://localhost:8910/temp-audio/xxx.mp3 -> /temp-audio/xxx.mp3
-		const audioPath = parseResult.value.audioUrl.replace(/^https?:\/\/[^/]+/, '')
-
-		const response = await axios({
-			url: audioPath, // 直接使用相对路径，Vite 会自动代理
-			method: 'GET',
-			responseType: 'blob',
+		const track = adaptVideoToTrack(audioResult, {
+			coverUrl: parseResult.value.coverUrl,
+			platform: parseResult.value.platform,
+			title: parseResult.value.title,
+			duration: parseResult.value.duration,
 		})
 
-		// 创建 Object URL 触发下载
-		const url = window.URL.createObjectURL(response.data)
-		const link = document.createElement('a')
-		link.href = url
-		link.download = `${parseResult.value.title}.${parseResult.value.audioFormat}`
-		link.style.display = 'none'
-		document.body.appendChild(link)
-		link.click()
-		document.body.removeChild(link)
-
-		// 释放 Object URL
-		window.URL.revokeObjectURL(url)
-
-		toast.success('下载成功，音频文件已保存')
+		playerStore.playTrack(track)
+		toast.success('音频已准备完成，开始播放')
 	} catch (err) {
-		console.error('下载失败:', err)
+		console.error('播放准备失败:', err)
+		toast.error('播放失败: ' + (err.message || '请稍后重试'))
+	}
+}
+
+// 下载音频
+async function handleDownloadAudio() {
+	if (!parseResult.value) return
+
+	try {
+		const hadReusableAudio = preparedAudioResource.value && !isPreparedAudioExpired(preparedAudioResource.value)
+		if (!hadReusableAudio) {
+			toast.info('正在准备音频资源...')
+		}
+
+		const audioResult = await prepareAudioResource('download-audio')
+		if (!audioResult) return
+
+		await downloadTemporaryFile(audioResult.audioUrl, `${audioResult.title}.${audioResult.audioFormat}`)
+		toast.success('音频资源已下载，请在过期前及时使用')
+	} catch (err) {
+		if (err.response?.status === 403 || err.response?.status === 404) {
+			try {
+				toast.info('音频资源已过期，正在重新生成...')
+				const refreshedAudioResult = await prepareAudioResource('download-audio', { forceRefresh: true })
+				if (!refreshedAudioResult) return
+
+				await downloadTemporaryFile(refreshedAudioResult.audioUrl, `${refreshedAudioResult.title}.${refreshedAudioResult.audioFormat}`)
+				toast.success('音频资源已重新生成并开始下载')
+				return
+			} catch (refreshErr) {
+				console.error('音频资源重新生成失败:', refreshErr)
+				err = refreshErr
+			}
+		}
+
+		console.error('音频下载失败:', err)
 		const errorMsg = err.response?.status === 403 ? '无权限访问该文件' : err.message || '请稍后重试'
-		toast.error('下载失败: ' + errorMsg)
+		toast.error('音频下载失败: ' + errorMsg)
+	}
+}
+
+async function handleDownloadVideo() {
+	if (!parseResult.value) return
+
+	if (!canDownloadVideo.value) {
+		toast.warning('当前视频暂不支持下载视频资源')
+		return
+	}
+
+	activeAction.value = 'download-video'
+	try {
+		toast.info('正在准备视频资源...')
+		const videoResult = await downloadVideo(buildMediaRequestPayload())
+		const fileName = `${videoResult.title}.${videoResult.container || 'mp4'}`
+		await downloadTemporaryFile(videoResult.videoUrl, fileName)
+		toast.success('视频资源已下载，请在过期前及时使用')
+	} catch (err) {
+		console.error('视频下载失败:', err)
+		const errorMsg = err.response?.status === 403 ? '无权限访问该文件' : err.message || '请稍后重试'
+		toast.error('视频下载失败: ' + errorMsg)
+	} finally {
+		activeAction.value = ''
 	}
 }
 
@@ -435,6 +595,8 @@ function handleReset() {
 	parseResult.value = null
 	error.value = null
 	videoUrl.value = ''
+	activeAction.value = ''
+	clearPreparedAudioResource()
 }
 
 // 工具函数
@@ -442,10 +604,6 @@ function formatDuration(seconds) {
 	const mins = Math.floor(seconds / 60)
 	const secs = seconds % 60
 	return `${mins}:${secs.toString().padStart(2, '0')}`
-}
-
-function formatFileSize(bytes) {
-	return (bytes / 1024 / 1024).toFixed(1) + ' MB'
 }
 </script>
 

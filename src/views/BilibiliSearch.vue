@@ -6,7 +6,7 @@
 			<!-- 页面标题 -->
 			<div class="mb-8">
 				<h1 class="text-3xl font-bold text-foreground mb-2">B站音乐搜索</h1>
-				<p class="text-sm text-muted-foreground">搜索 B 站视频并保存为音乐，支持关键词、BV号搜索</p>
+				<p class="text-sm text-muted-foreground">搜索 B 站视频并在线播放音频，支持关键词、BV号搜索</p>
 			</div>
 
 			<!-- 搜索功能区 -->
@@ -153,8 +153,8 @@
 								{{ isVideoLoading(video.bvid) ? '解析中...' : '播放' }}
 							</Button>
 
-							<!-- 添加到歌单按钮（保留，暂无功能） -->
-							<Button class="flex-1" size="sm" variant="outline" :disabled="isVideoLoading(video.bvid)" title="即将上线">
+							<!-- 保存能力暂未接入 -->
+							<Button class="flex-1" size="sm" variant="outline" :disabled="true" title="当前版本暂不支持保存为音乐">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									class="mr-2 h-4 w-4"
@@ -168,7 +168,7 @@
 									<path d="M12 5v14" />
 									<path d="M5 12h14" />
 								</svg>
-								添加
+								暂不可用
 							</Button>
 						</div>
 					</Card>
@@ -187,7 +187,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { searchBilibiliVideos, getSearchHistory, clearSearchHistory as clearSearchHistoryAPI } from '@/api/bilibili'
-import { parseVideo } from '@/api/video'
+import { parseVideo, prepareAudio } from '@/api/video'
 import { useToast } from '@/composables/useToast'
 import { useDebounceFn } from '@/composables/useDebounce'
 import { confirmWarning } from '@/composables/useConfirm'
@@ -220,10 +220,10 @@ const videoStates = ref({})
 
 // 阶段提示文本
 const loadingStages = [
-	'正在提取视频音频...',
-	'正在进行格式转换...',
-	'正在优化音质...',
-	'即将完成，请稍候...',
+	'正在解析视频信息...',
+	'正在准备音频资源...',
+	'正在接入播放器...',
+	'即将开始播放...',
 ]
 
 /**
@@ -396,22 +396,39 @@ async function handlePlayVideo(video) {
 	toast.info(loadingStages[0] + ' (预计10-60秒)')
 
 	try {
-		// 调用视频解析 API
 		const parseResult = await parseVideo({
 			videoUrl: video.url,
 			platform: 'BILIBILI',
+			includeAvailableActions: true,
 		})
 
-		// 转换为统一的音轨格式
-		const track = adaptVideoToTrack(parseResult)
+		const canPrepareAudio = parseResult.audioSupported && parseResult.availableActions?.includes('AUDIO_PREPARE')
+		if (!canPrepareAudio) {
+			toast.warning(`《${video.title}》当前暂不支持音频播放`)
+			return
+		}
 
-		// 播放音频
+		videoStates.value[video.bvid].currentStage = loadingStages[1]
+
+		const audioResult = await prepareAudio({
+			videoUrl: parseResult.normalizedVideoUrl || video.url,
+			platform: parseResult.platform || 'BILIBILI',
+			preferredAudioFormat: 'mp3',
+		})
+
+		videoStates.value[video.bvid].currentStage = loadingStages[2]
+
+		const track = adaptVideoToTrack(audioResult, {
+			title: parseResult.title || video.title,
+			duration: parseResult.duration,
+			platform: parseResult.platform || 'BILIBILI',
+		})
+
 		playerStore.playTrack(track)
 
-		// 显示成功提示（包含过期提醒）
-		toast.success(`开始播放《${video.title}》(音频将在1小时后过期)`, 5000)
+		toast.success(`《${video.title}》音频已准备完成，开始播放`, 5000)
 	} catch (error) {
-		console.error('视频解析失败:', error)
+		console.error('播放准备失败:', error)
 		handleParseError(error, video.title)
 	} finally {
 		// 清理状态

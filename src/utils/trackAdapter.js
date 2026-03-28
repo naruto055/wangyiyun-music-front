@@ -4,23 +4,24 @@
  */
 
 /**
- * 将视频解析结果转换为音轨对象
- * @param {Object} videoParseResult - 视频解析结果
+ * 将已准备好的音频资源转换为音轨对象
+ * @param {Object} audioPrepareResult - 音频准备结果
+ * @param {Object} [metadata={}] - 补充元数据
  * @returns {Object} 统一的音轨对象
  */
-export function adaptVideoToTrack(videoParseResult) {
+export function adaptVideoToTrack(audioPrepareResult, metadata = {}) {
 	return {
 		// 基础信息
-		id: `video_${videoParseResult.sourceVideoId}`, // 临时ID
-		title: videoParseResult.title,
-		coverUrl: videoParseResult.coverUrl,
-		duration: videoParseResult.duration,
+		id: `video_${audioPrepareResult.sourceVideoId}`, // 临时ID
+		title: audioPrepareResult.title || metadata.title,
+		coverUrl: metadata.coverUrl || null,
+		duration: audioPrepareResult.duration ?? metadata.duration ?? 0,
 
-		// 音频源（视频解析的核心字段）
+		// 音频源（仅在音频资源准备完成后存在）
 		audioSources: [
 			{
-				url: videoParseResult.audioUrl, // 必须是 url 字段，不是 sourceUrl
-				format: videoParseResult.audioFormat,
+				url: audioPrepareResult.audioUrl,
+				format: audioPrepareResult.audioFormat,
 				quality: 'high',
 			},
 		],
@@ -39,9 +40,9 @@ export function adaptVideoToTrack(videoParseResult) {
 
 		// 元数据（用于区分数据来源）
 		_source: 'video_parse', // 标识数据来源
-		_platform: videoParseResult.platform, // 平台类型
-		_sourceVideoId: videoParseResult.sourceVideoId, // 源视频ID
-		_expiresAt: videoParseResult.expiresAt, // 过期时间
+		_platform: metadata.platform || null, // 平台类型
+		_sourceVideoId: audioPrepareResult.sourceVideoId, // 源视频ID
+		_expiresAt: audioPrepareResult.expiresAt, // 过期时间
 		_isTemporary: true, // 标记为临时文件
 	}
 }
