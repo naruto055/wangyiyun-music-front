@@ -12,7 +12,7 @@
 			<!-- 搜索功能区 -->
 			<Card class="p-6 mb-8">
 				<!-- 搜索输入框 -->
-				<div class="flex gap-2 mb-4">
+				<div class="flex gap-2">
 					<div class="relative flex-1">
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -34,33 +34,6 @@
 						</svg>
 						搜索
 					</Button>
-				</div>
-
-				<!-- 搜索历史 -->
-				<div v-if="searchHistory.length > 0">
-					<div class="flex items-center justify-between mb-3">
-						<span class="text-sm text-muted-foreground">搜索历史</span>
-						<Button variant="ghost" size="sm" @click="handleClearHistory">
-							<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<path d="M18 6 6 18" />
-								<path d="m6 6 12 12" />
-							</svg>
-							清空
-						</Button>
-					</div>
-					<div class="flex flex-wrap gap-2">
-						<Button
-							v-for="item in searchHistory"
-							:key="item.id"
-							variant="outline"
-							size="sm"
-							class="text-xs"
-							@click="handleHistoryClick(item.keyword)"
-						>
-							{{ item.keyword }}
-							<span class="ml-1 text-muted-foreground">({{ item.searchCount }})</span>
-						</Button>
-					</div>
 				</div>
 			</Card>
 
@@ -185,12 +158,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { searchBilibiliVideos, getSearchHistory, clearSearchHistory as clearSearchHistoryAPI } from '@/api/bilibili'
+import { ref } from 'vue'
+import { searchBilibiliVideos } from '@/api/bilibili'
 import { parseVideo, prepareAudio } from '@/api/video'
 import { useToast } from '@/composables/useToast'
 import { useDebounceFn } from '@/composables/useDebounce'
-import { confirmWarning } from '@/composables/useConfirm'
 import { usePlayerStore } from '@/stores/player'
 import { adaptVideoToTrack } from '@/utils/trackAdapter'
 import Header from '@/components/layout/Header.vue'
@@ -211,9 +183,6 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const loading = ref(false)
 const hasSearched = ref(false)
-
-// 搜索历史
-const searchHistory = ref([])
 
 // 视频加载状态管理（每个视频独立状态）
 const videoStates = ref({})
@@ -253,13 +222,6 @@ function getCurrentStage(bvid) {
 }
 
 /**
- * 页面加载
- */
-onMounted(async () => {
-	await loadSearchHistory()
-})
-
-/**
  * 防抖搜索函数（500ms延迟）
  * @param {string} keyword - 搜索关键词
  * @param {boolean} isNewSearch - 是否为新搜索（默认 true），分页操作时传 false
@@ -287,9 +249,6 @@ const debouncedSearch = useDebounceFn(async (keyword, isNewSearch = true) => {
 		searchResults.value = response.records || []
 		total.value = response.total || 0
 
-		// 刷新搜索历史（后端会自动记录）
-		await loadSearchHistory()
-
 		if (searchResults.value.length === 0) {
 			toast.info('未找到相关结果，换个关键词试试')
 		}
@@ -302,18 +261,6 @@ const debouncedSearch = useDebounceFn(async (keyword, isNewSearch = true) => {
 		loading.value = false
 	}
 }, 500)
-
-/**
- * 加载搜索历史
- */
-async function loadSearchHistory() {
-	try {
-		const response = await getSearchHistory({ page: 1, pageSize: 10 })
-		searchHistory.value = response.records || []
-	} catch (error) {
-		console.error('加载搜索历史失败:', error)
-	}
-}
 
 /**
  * 搜索处理（手动触发，如点击按钮或回车）
@@ -335,35 +282,6 @@ async function handlePageChange(page) {
 	currentPage.value = page
 	debouncedSearch(searchKeyword.value, false) // 分页操作，不重置页码
 	window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-/**
- * 点击历史标签
- */
-function handleHistoryClick(keyword) {
-	searchKeyword.value = keyword
-	handleSearch()
-}
-
-/**
- * 清空搜索历史
- */
-async function handleClearHistory() {
-	try {
-		await confirmWarning('确定要清空所有搜索历史吗？', '清空确认')
-	} catch {
-		// 用户取消操作
-		return
-	}
-
-	try {
-		await clearSearchHistoryAPI()
-		searchHistory.value = []
-		toast.success('搜索历史已清空')
-	} catch (error) {
-		console.error('清空历史失败:', error)
-		toast.error('清空历史失败，请重试')
-	}
 }
 
 /**

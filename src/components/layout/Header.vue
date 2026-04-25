@@ -13,46 +13,6 @@
 			<!-- 导航菜单 -->
 			<nav class="flex items-center gap-1">
 				<router-link
-					to="/music"
-					class="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors"
-					:class="
-						currentPath === '/music' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-					"
-				>
-					<svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M9 18V5l12-2v13"></path>
-						<circle cx="6" cy="18" r="3"></circle>
-						<circle cx="18" cy="16" r="3"></circle>
-					</svg>
-					音乐列表
-				</router-link>
-				<router-link
-					to="/favorites"
-					class="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors"
-					:class="
-						currentPath === '/favorites' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-					"
-				>
-					<svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path
-							d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
-						></path>
-					</svg>
-					我的收藏
-				</router-link>
-				<router-link
-					to="/albums"
-					class="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors"
-					:class="
-						currentPath === '/albums' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-					"
-				>
-					<svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" />
-					</svg>
-					专辑列表
-				</router-link>
-				<router-link
 					to="/video-parser"
 					class="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors"
 					:class="

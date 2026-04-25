@@ -7,31 +7,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 const routes = [
 	{
 		path: '/',
-		redirect: '/music',
-	},
-	{
-		path: '/music',
-		name: 'MusicList',
-		component: () => import('@/views/MusicList.vue'),
-		meta: {
-			title: '音乐列表',
-		},
-	},
-	{
-		path: '/favorites',
-		name: 'FavoriteList',
-		component: () => import('@/views/FavoriteList.vue'),
-		meta: {
-			title: '我的收藏',
-		},
-	},
-	{
-		path: '/albums',
-		name: 'AlbumList',
-		component: () => import('@/views/AlbumList.vue'),
-		meta: {
-			title: '专辑列表',
-		},
+		redirect: '/video-parser',
 	},
 	{
 		path: '/video-parser',
@@ -48,6 +24,10 @@ const routes = [
 		meta: {
 			title: 'B站音乐搜索',
 		},
+	},
+	{
+		path: '/:pathMatch(.*)*',
+		redirect: '/video-parser',
 	},
 ]
 
