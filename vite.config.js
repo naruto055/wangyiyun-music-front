@@ -14,6 +14,11 @@ export default defineConfig({
 	server: {
 		port: 5173,
 		proxy: {
+			'/ai-api': {
+				target: 'http://localhost:3000',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/ai-api/, '/api'),
+			},
 			'/api': {
 				target: 'http://localhost:8910',
 				changeOrigin: true,
@@ -30,5 +35,9 @@ export default defineConfig({
 				changeOrigin: true,
 			},
 		},
+	},
+	test: {
+		environment: 'node',
+		include: ['src/**/*.test.js'],
 	},
 })

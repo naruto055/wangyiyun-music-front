@@ -26,6 +26,14 @@ const routes = [
 		},
 	},
 	{
+		path: '/ai-parser',
+		name: 'AiParser',
+		component: () => import('@/views/AiParser.vue'),
+		meta: {
+			title: 'AI解析',
+		},
+	},
+	{
 		path: '/:pathMatch(.*)*',
 		redirect: '/video-parser',
 	},

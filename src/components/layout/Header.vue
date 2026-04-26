@@ -7,11 +7,28 @@
 						<path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
 					</svg>
 				</div>
-				<h1 class="text-xl font-bold">网易云音乐</h1>
+				<h1 class="text-xl font-bold">音乐解析工具</h1>
 			</div>
 
 			<!-- 导航菜单 -->
 			<nav class="flex items-center gap-1">
+				<router-link
+					to="/ai-parser"
+					class="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors"
+					:class="
+						currentPath === '/ai-parser' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+					"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M9.5 4A3.5 3.5 0 006 7.5c0 .76.24 1.47.64 2.06A4.5 4.5 0 004.5 13.5 4.5 4.5 0 009 18h6a4.5 4.5 0 001.3-8.81A3.5 3.5 0 0012.5 4h-3z"
+						/>
+						<path stroke-linecap="round" stroke-linejoin="round" d="M9 13h6M12 10v6" />
+					</svg>
+					AI解析
+				</router-link>
 				<router-link
 					to="/video-parser"
 					class="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors"
