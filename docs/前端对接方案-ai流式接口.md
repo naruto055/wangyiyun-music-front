@@ -1,130 +1,219 @@
-# 前端对接方案：`POST /api/ai/chat/stream`
+# AI 对话流接口前端对接文档
 
-## 1. 文档目标
+## 1. 文档范围
 
-本文档只面向前端对接 AI 流式对话接口：
+本文档仅针对后端控制器：
+
+- `D:/JavaCodeStudy/wangyiyun-music/src/main/java/com/naruto/wangyiyunmusic/controller/AiChatController.java`
+
+对应接口：
 
 - `POST /api/ai/chat/stream`
 
-本文档重点说明：
+文档目标：
 
-- 如何用 `fetch + ReadableStream` 消费 SSE
-- 如何处理接口中的 function calling 结果
-- 如何从流式事件中拿到视频解析结果
-- 如何基于解析结果衔接视频、音频下载
+- 说明接口真实请求/响应协议
+- 说明 SSE 事件结构
+- 说明前端接入注意事项
+- 给出贴合当前项目的实现意见
 
-说明边界：
-
-- 本文档不展开普通接口 `POST /api/ai/chat`
-- 本文档不展开纯解析接口 `POST /api/parse`
-- 下载能力仍然走现有统一入口 `GET /api/download`
+本文结论以当前后端源码实现为准，不以旧版前端草稿或历史文档为准。
 
 ---
 
-## 2. 接口定位
+## 2. 接口概览
 
-该接口适合以下前端场景：
+### 2.1 接口用途
 
-- 需要像聊天一样逐步展示 AI 回复
-- 需要展示“分析中”“解析中”等过程状态
-- 需要接收 function calling 的结构化结果
-- 需要在解析完成后提供“下载视频”“下载音频”操作
+该接口用于 AI 流式对话，支持两类输出同时返回：
 
-和普通聊天接口相比，它的差异是：
+- AI 文本增量回复
+- 视频链接解析后的结构化结果
 
-- 普通接口一次性返回完整 JSON
-- 流式接口通过 SSE 逐步返回 `session`、`progress`、`tool_result`、`reply_delta`、`done` 等事件
+当用户消息中包含 URL 时，后端会先尝试提取第一条链接并调用视频解析工具，再结合解析结果生成 AI 回复。
 
----
-
-## 3. 请求定义
-
-### 3.1 请求地址
+### 2.2 路由定义
 
 ```http
 POST /api/ai/chat/stream
 ```
 
-### 3.2 请求头
+控制器声明：
+
+- `@RequestMapping("/api/ai")`
+- `@PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)`
+
+### 2.3 超时时间
+
+当前控制器创建的 `SseEmitter` 超时时间固定为：
+
+```text
+120000ms（120秒）
+```
+
+注意：
+
+- 当前 `AiChatController` 使用的是控制器内常量 `SSE_TIMEOUT_MS = 120000L`
+- 虽然 `AiChatProperties` 中也有 `sseTimeoutMs` 配置项，但当前控制器实现并未使用它
+
+---
+
+## 3. 请求定义
+
+### 3.1 请求头
 
 ```http
 Accept: text/event-stream
 Content-Type: application/json
 ```
 
-### 3.3 请求体
+### 3.2 请求体
 
 ```json
 {
-  "message": "帮我解析这个抖音链接 https://v.douyin.com/xxxxx/",
-  "sessionId": "optional-session-id"
+	"message": "帮我解析这个 B 站链接 https://www.bilibili.com/video/BV1xxxxxx",
+	"sessionId": "b2dcab66-d3b4-4a44-9699-24c73ef04ae1"
 }
 ```
 
-请求参数：
+### 3.3 字段说明
 
-| 字段 | 类型 | 必填 | 说明 |
-| --- | --- | --- | --- |
-| `message` | `string` | 是 | 用户输入的自然语言消息，可包含抖音链接或分享文案 |
-| `sessionId` | `string` | 否 | 会话 ID；不传时由后端生成 |
+| 字段        | 类型     | 必填 | 说明                               |
+| ----------- | -------- | ---- | ---------------------------------- |
+| `message`   | `string` | 是   | 用户输入内容。后端要求非空白字符串 |
+| `sessionId` | `string` | 否   | 会话 ID。不传时由后端生成 UUID     |
 
----
+### 3.4 参数校验
 
-## 4. 响应头与传输方式
+控制器只做了最小校验：
 
-服务端会建立标准 SSE 响应：
+- `requestDTO == null` 或 `message` 为空时，直接返回 `400`
 
-```http
-Content-Type: text/event-stream; charset=utf-8
-Cache-Control: no-cache, no-transform
-Connection: keep-alive
+错误响应示例：
+
+```json
+{
+	"code": 400,
+	"message": "message is required",
+	"data": null
+}
 ```
 
 注意：
 
-- 这是 `POST` 接口，不适合用浏览器原生 `EventSource`
-- 前端应使用 `fetch + ReadableStream`
-- 服务端会发送心跳注释行 `: keep-alive`，前端应忽略
+- 这是普通 JSON 响应，不是 SSE 事件
+- 所以前端必须先判断 HTTP 状态和 `Content-Type`，不能默认所有返回都是流
 
 ---
 
-## 5. 事件协议
+## 4. 响应协议
 
-### 5.1 事件总览
+### 4.1 成功响应
 
-当前接口会输出以下事件：
+正常情况下，接口返回：
 
-| 事件名 | 说明 |
-| --- | --- |
-| `session` | 返回本次会话 ID |
-| `progress` | 当前处理阶段提示 |
-| `tool_result` | function calling 执行后的结构化解析结果 |
-| `thinking_delta` | 思考内容增量 |
-| `reply_delta` | 最终回复内容增量 |
-| `done` | 最终完整结果 |
-| `error` | 流式过程中发生错误 |
+```http
+Content-Type: text/event-stream;charset=UTF-8
+```
 
-推荐前端处理原则：
+并通过 SSE 持续推送事件。
 
-- `reply_delta` 用于实时渲染聊天回答
-- `tool_result` 用于更新视频卡片、下载按钮、媒体信息
-- `done` 作为本轮消息完成信号
+### 4.2 失败响应
 
-### 5.2 `session`
+该接口存在两种失败模式：
+
+1. 建连前失败：直接返回普通 JSON 错误
+2. 建连后失败：返回 SSE `error` 事件
+
+### 4.3 与全局响应封装的关系
+
+虽然项目有 `GlobalResponseAdvice` 统一包装 `Result<T>`，但对本接口：
+
+- `SseEmitter` 类型不会再包装
+- `text/event-stream` 响应也不会再包装
+
+这意味着：
+
+- SSE 正常事件体不是 `{ code, message, data }`
+- 只有建连前参数错误等情况，才可能收到 `Result` 风格 JSON
+
+---
+
+## 5. 事件时序
+
+根据 `AiChatStreamServiceImpl` 当前实现，一次正常请求的典型事件顺序如下：
+
+### 5.1 不包含视频链接时
+
+```text
+session
+progress(model_start)
+reply_delta（0..n次）
+done
+```
+
+### 5.2 包含视频链接时
+
+```text
+session
+progress(model_start)
+progress(tool_start)
+tool_result
+reply_delta（0..n次）
+done
+```
+
+### 5.3 异常时
+
+```text
+session? -> progress? -> error
+```
+
+注意：
+
+- `session` 基本会最先发出
+- `tool_result` 只在识别到 URL 且解析成功时发送
+- 当前后端实现不会发送 `thinking_delta`
+- `done` 事件是本轮会话结束的最终信号
+
+---
+
+## 6. SSE 事件定义
+
+## 6.1 `session`
+
+用途：
+
+- 告知前端当前会话 ID
+- 便于前端下一轮继续携带上下文
 
 示例：
 
 ```text
 event: session
-data: {"sessionId":"f4df1d0b-cb2b-49ca-bfe3-7262d5e9ec67"}
+data: {"sessionId":"b2dcab66-d3b4-4a44-9699-24c73ef04ae1"}
 ```
+
+字段定义：
+
+| 字段        | 类型     | 说明        |
+| ----------- | -------- | ----------- |
+| `sessionId` | `string` | 当前会话 ID |
+
+---
+
+## 6.2 `progress`
 
 用途：
 
-- 保存本轮会话 ID
-- 下次继续聊天时把该 `sessionId` 回传给后端
+- 给前端展示“当前处理到哪一步”
 
-### 5.3 `progress`
+当前已确认阶段值：
+
+| stage         | 含义                 |
+| ------------- | -------------------- |
+| `model_start` | AI 开始分析输入      |
+| `tool_start`  | 开始调用视频解析工具 |
 
 示例：
 
@@ -133,571 +222,660 @@ event: progress
 data: {"stage":"model_start","message":"AI 正在分析输入"}
 ```
 
-当前已确认的阶段值里，至少包含：
+```text
+event: progress
+data: {"stage":"tool_start","message":"正在调用视频解析工具"}
+```
 
-- `model_start`
+字段定义：
+
+| 字段      | 类型     | 说明                       |
+| --------- | -------- | -------------------------- |
+| `stage`   | `string` | 当前处理阶段               |
+| `message` | `string` | 可直接展示给用户的提示文案 |
 
 前端建议：
 
-- 直接展示 `message`
-- 不要对 `stage` 做过度硬编码，只把它作为可选状态标识
+- 优先展示 `message`
+- `stage` 只作为状态标记，不要写死过多分支
 
-### 5.4 `tool_result`
+---
 
-这是最关键的事件，它表示模型通过 function calling 调用了后端工具，或者后端 fallback 触发了解析，并返回了结构化结果。
+## 6.3 `tool_result`
+
+用途：
+
+- 返回视频解析工具结果
+- 提供结构化卡片数据
 
 示例：
 
 ```text
 event: tool_result
 data: {
-  "parsedData": {
-    "source": "puppeteer",
-    "title": "示例标题",
-    "author": "示例作者",
-    "cover": "https://.../cover.jpg",
-    "duration": 15000,
-    "videoUrl": "https://.../video.mp4",
-    "audioUrl": "https://.../audio.mp3",
-    "audioReady": true,
-    "shareUrl": "https://v.douyin.com/xxxxx/"
-  },
   "toolStatus": {
     "status": "resolved",
     "warnings": []
+  },
+  "parsedData": {
+    "title": "示例标题",
+    "coverUrl": "https://i2.hdslb.com/bfs/archive/xxx.jpg",
+    "duration": 1234,
+    "platform": "BILIBILI",
+    "normalizedVideoUrl": "https://www.bilibili.com/video/BV1Yv6EBkEJ3",
+    "availableActions": ["AUDIO_PREPARE", "VIDEO_DOWNLOAD"],
+    "audioSupported": true,
+    "videoSupported": true,
+    "sourceVideoId": "BV1Yv6EBkEJ3",
+    "message": "音频可直接准备，视频下载需手动触发"
   }
 }
 ```
 
-字段说明：
+### `toolStatus` 字段
 
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| `parsedData` | `object \| null` | 解析出的结构化视频信息 |
-| `toolStatus` | `object \| null` | 工具结果状态摘要 |
-| `toolStatus.status` | `string` | 当前可能为 `resolved` 或 `suspect` |
-| `toolStatus.warnings` | `string[]` | 告警列表，例如 `placeholder_share_url` |
+| 字段       | 类型       | 说明         |
+| ---------- | ---------- | ------------ |
+| `status`   | `string`   | 工具执行状态 |
+| `warnings` | `string[]` | 警告信息列表 |
 
-`parsedData` 中前端重点使用字段：
+当前源码已明确支持的状态值：
 
-| 字段 | 类型 | 用途 |
-| --- | --- | --- |
-| `title` | `string` | 视频标题展示、下载文件名候选 |
-| `author` | `string` | 作者昵称展示 |
-| `cover` | `string` | 封面图展示 |
-| `duration` | `number` | 时长展示 |
-| `videoUrl` | `string` | 仅用于理解解析结果，不建议前端直接拿它下载 |
-| `audioUrl` | `string` | 仅用于理解解析结果，不建议前端直接拿它下载 |
-| `audioReady` | `boolean` | 判断音频按钮文案与提示 |
-| `shareUrl` | `string` | 前端调用 `/api/download` 时最重要的输入 |
+- `resolved`
+- `failed`
 
-### 5.5 `thinking_delta`
+注意：
 
-示例：
+- `AiToolStatusVO` 注释中提到 `unresolved`、`partial`
+- 但当前实际工厂方法只构建 `resolved`、`failed`
+- 前端可以保留兼容兜底分支，但不要假设当前一定会收到其他值
 
-```text
-event: thinking_delta
-data: {"delta":"我先识别用户消息中的抖音链接。"}
-```
+### `parsedData` 字段
 
-前端建议：
+`parsedData` 实际结构复用了 `VideoParseResultVO`，字段如下：
 
-- 如果产品不打算展示推理内容，可以直接忽略
-- 如果需要展示“思考过程”，应单独渲染，不要混入最终回答正文
+| 字段                 | 类型       | 说明                    |
+| -------------------- | ---------- | ----------------------- |
+| `title`              | `string`   | 视频标题                |
+| `coverUrl`           | `string`   | 封面图                  |
+| `duration`           | `number`   | 时长，单位秒            |
+| `platform`           | `string`   | 平台代码，如 `BILIBILI` |
+| `normalizedVideoUrl` | `string`   | 规范化后的视频链接      |
+| `availableActions`   | `string[]` | 当前可执行动作          |
+| `audioSupported`     | `boolean`  | 是否支持音频能力        |
+| `videoSupported`     | `boolean`  | 是否支持视频下载能力    |
+| `sourceVideoId`      | `string`   | 原始视频 ID，如 `BV号`  |
+| `message`            | `string`   | 后端提示信息            |
 
-### 5.6 `reply_delta`
+重要说明：
+
+- 当前真实字段是 `coverUrl`，不是 `cover`
+- 当前真实字段是 `normalizedVideoUrl`，不是 `shareUrl`
+- 当前真实字段中没有 `author`、`audioUrl`、`videoUrl`、`audioReady`
+- 前端不能继续按旧字段模型消费
+
+---
+
+## 6.4 `reply_delta`
+
+用途：
+
+- AI 文本增量输出
+- 用于聊天气泡实时渲染
 
 示例：
 
 ```text
 event: reply_delta
-data: {"delta":"解析成功，这个视频标题是示例标题。"}
+data: {"delta":"解析完成，这个视频标题是《示例标题》。"}
 ```
+
+字段定义：
+
+| 字段    | 类型     | 说明             |
+| ------- | -------- | ---------------- |
+| `delta` | `string` | 本次新增文本片段 |
 
 前端建议：
 
-- 把 `delta` 逐段拼接到当前 AI 回复文本
-- 将它作为聊天区主渲染内容
+- 将多个 `delta` 依次拼接到当前回复文本
+- 不要假设一次只收到一段完整句子
 
-### 5.7 `done`
+---
+
+## 6.5 `done`
+
+用途：
+
+- 表示本轮流式对话结束
+- 返回最终汇总结果
 
 示例：
 
 ```text
 event: done
 data: {
-  "thinking": "...",
-  "reply": "解析成功，这个视频标题是示例标题。",
-  "sessionId": "f4df1d0b-cb2b-49ca-bfe3-7262d5e9ec67",
-  "parsedData": {
-    "title": "示例标题",
-    "author": "示例作者",
-    "shareUrl": "https://v.douyin.com/xxxxx/",
-    "audioReady": true
-  },
+  "thinking": "识别到用户输入中包含视频链接，已调用视频解析工具。",
+  "reply": "解析完成，这个视频标题是《示例标题》。你可以继续准备音频或按需下载视频。",
+  "sessionId": "b2dcab66-d3b4-4a44-9699-24c73ef04ae1",
   "toolStatus": {
     "status": "resolved",
     "warnings": []
+  },
+  "parsedData": {
+    "title": "示例标题",
+    "coverUrl": "https://i2.hdslb.com/bfs/archive/xxx.jpg",
+    "duration": 1234,
+    "platform": "BILIBILI",
+    "normalizedVideoUrl": "https://www.bilibili.com/video/BV1Yv6EBkEJ3",
+    "availableActions": ["AUDIO_PREPARE", "VIDEO_DOWNLOAD"],
+    "audioSupported": true,
+    "videoSupported": true,
+    "sourceVideoId": "BV1Yv6EBkEJ3",
+    "message": "音频可直接准备，视频下载需手动触发"
   }
 }
 ```
 
+字段定义：
+
+| 字段         | 类型             | 说明                         |
+| ------------ | ---------------- | ---------------------------- |
+| `thinking`   | `string`         | 本轮处理摘要，不是逐字推理流 |
+| `reply`      | `string`         | 最终完整回复                 |
+| `sessionId`  | `string`         | 当前会话 ID                  |
+| `toolStatus` | `object \| null` | 工具执行状态                 |
+| `parsedData` | `object \| null` | 视频解析结果                 |
+
+注意：
+
+- 当前后端不会发 `thinking_delta`
+- `thinking` 只会在 `done` 里一次性给出摘要
+
+---
+
+## 6.6 `error`
+
 用途：
 
-- 标记本轮流式输出结束
-- 以最终完整结果覆盖前面增量态数据
-- 作为前端一次消息完成、可解锁输入框的信号
-
-### 5.8 `error`
+- 表示 SSE 建立后，服务端处理过程中发生异常
 
 示例：
 
 ```text
 event: error
-data: {"error":"AI stream failed"}
+data: {"error":"AI 对话能力未启用"}
 ```
 
-注意：
+字段定义：
 
-- 一旦 SSE 已经建立，后端不会再切回普通 JSON
-- 前端应把 `error` 视为流式失败事件，而不是 HTTP 失败
+| 字段    | 类型     | 说明     |
+| ------- | -------- | -------- |
+| `error` | `string` | 错误信息 |
 
----
+前端建议：
 
-## 6. Function Calling 说明
-
-### 6.1 前端应该如何理解
-
-这个接口内部可能触发工具 `parse_douyin_video`。
-
-它的作用是：
-
-- 从用户消息中提取抖音链接或分享文案
-- 调用后端解析逻辑
-- 返回标题、作者、封面、视频地址、音频地址等结构化数据
-
-对前端来说，不需要参与 function calling 的实现，只需要消费 `tool_result` 或 `done` 中的 `parsedData`。
-
-前端真正需要关注的是：
-
-1. 工具是否返回了 `parsedData`
-2. `toolStatus.status` 是否为 `resolved`
-3. `parsedData.shareUrl` 是否可用于后续下载
-
-### 6.2 `toolStatus` 的使用建议
-
-建议规则：
-
-- `status === "resolved"`：按正常可下载状态处理
-- `status === "suspect"`：允许展示结果，但应提示用户“解析结果可能不完整，请确认链接是否正确”
-
-如果存在告警：
-
-- `placeholder_share_url`
-
-建议前端处理：
-
-- 不直接隐藏下载按钮
-- 但需要给出明显提示，提醒用户二次确认
+- 收到该事件后，立刻结束当前轮次等待
+- 将当前消息标记为失败态
+- 给用户展示可重试入口
 
 ---
 
-## 7. 前端状态机建议
+## 7. 当前后端处理逻辑说明
 
-推荐将一次流式对话拆成这些状态：
+## 7.1 URL 识别逻辑
 
-- `idle`：未发送
-- `connecting`：请求已发出，等待首个事件
-- `streaming`：正在接收 `reply_delta`
-- `tool_ready`：已经收到 `tool_result`
-- `completed`：收到 `done`
-- `error`：收到 `error` 或请求失败
+后端当前使用正则：
 
-推荐维护的数据：
-
-```ts
-interface StreamChatState {
-  sessionId: string;
-  progressMessage: string;
-  thinkingText: string;
-  replyText: string;
-  parsedData: ParseResult | null;
-  toolStatus: ToolStatus | null;
-  status: 'idle' | 'connecting' | 'streaming' | 'tool_ready' | 'completed' | 'error';
-}
+```text
+https?://\S+
 ```
 
----
+并且：
 
-## 8. TypeScript 类型建议
+- 只提取 `message` 中第一条 URL
+- 如果消息没有 URL，则不触发视频解析工具
 
-```ts
-export interface ToolStatus {
-  status: 'resolved' | 'suspect';
-  warnings: string[];
-}
+这意味着前端需要注意：
 
-export interface ParseResult {
-  source?: string;
-  title?: string;
-  author?: string;
-  cover?: string;
-  duration?: number;
-  videoUrl?: string;
-  audioUrl?: string;
-  audioReady?: boolean;
-  shareUrl?: string;
-}
+- 用户输入多条链接时，当前只会处理第一条
+- 如果是纯 `BV号`、纯关键字、无协议分享文案，当前控制器这层不一定能命中工具解析
 
-export interface StreamDonePayload {
-  thinking: string;
-  reply: string;
-  sessionId: string;
-  parsedData: ParseResult | null;
-  toolStatus: ToolStatus | null;
-}
+## 7.2 平台识别逻辑
 
-export interface StreamEventMap {
-  session: { sessionId: string };
-  progress: { stage?: string; message?: string };
-  thinking_delta: { delta: string };
-  reply_delta: { delta: string };
-  tool_result: { parsedData: ParseResult | null; toolStatus: ToolStatus | null };
-  done: StreamDonePayload;
-  error: { error: string };
-}
-```
+工具服务当前根据 URL 域名识别平台：
 
----
+- `bilibili.com` / `b23.tv` -> `BILIBILI`
+- `douyin.com` -> `DOUYIN`
+- `youtube.com` / `youtu.be` -> `YOUTUBE`
 
-## 9. 前端接入示例
+无法识别时，会抛出业务异常。
 
-### 9.1 基础版 SSE 消费
+## 7.3 AI 模型兜底逻辑
 
-```ts
-type StreamHandlers = {
-  onSession?: (payload: StreamEventMap['session']) => void;
-  onProgress?: (payload: StreamEventMap['progress']) => void;
-  onThinkingDelta?: (payload: StreamEventMap['thinking_delta']) => void;
-  onReplyDelta?: (payload: StreamEventMap['reply_delta']) => void;
-  onToolResult?: (payload: StreamEventMap['tool_result']) => void;
-  onDone?: (payload: StreamEventMap['done']) => void;
-  onError?: (payload: { error: string }) => void;
-};
+如果 Spring AI 模型不可用或流式生成失败：
 
-function parseSSEBlocks(buffer: string) {
-  const chunks = buffer.split('\n\n');
-  const complete = chunks.slice(0, -1);
-  const rest = chunks[chunks.length - 1] || '';
+- 后端不会直接报错结束
+- 会构造兜底回复
 
-  const events = complete
-    .map((block) => block.trim())
-    .filter(Boolean)
-    .map((block) => {
-      const lines = block.split('\n');
-      const eventLine = lines.find((line) => line.startsWith('event:'));
-      const dataLine = lines.find((line) => line.startsWith('data:'));
+兜底回复分两种：
 
-      if (!eventLine || !dataLine) {
-        return null;
-      }
+1. 没有解析结果时：
+   - `我已收到你的消息。你可以发送 B站、抖音或 YouTube 视频链接，我会帮你解析视频信息。`
+2. 有解析结果时：
+   - `解析完成，这个视频标题是《xxx》。你可以继续准备音频或按需下载视频。`
 
-      return {
-        event: eventLine.slice(6).trim(),
-        data: JSON.parse(dataLine.slice(5).trim())
-      };
-    })
-    .filter(Boolean);
+这意味着：
 
-  return { events, rest };
-}
+- 前端不能把“收到 `reply_delta` 很少”直接视为失败
+- 有时模型流失败，但仍会有可用 `done` 结果
 
-export async function streamChat(
-  payload: { message: string; sessionId?: string },
-  handlers: StreamHandlers = {}
-) {
-  const response = await fetch('/api/ai/chat/stream', {
-    method: 'POST',
-    headers: {
-      Accept: 'text/event-stream',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload)
-  });
+## 7.4 会话能力边界
 
-  if (!response.ok) {
-    const errorResult = await response.json().catch(() => null);
-    throw new Error(errorResult?.message || '流式请求失败');
-  }
+后端确实保存了会话消息：
 
-  if (!response.body) {
-    throw new Error('当前浏览器不支持流式读取');
-  }
+- 默认最近 10 轮
+- 仅保存在内存中
+- 不做持久化
+- 不做分布式同步
 
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder('utf-8');
-  let buffer = '';
+这意味着：
 
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-    const parsed = parseSSEBlocks(buffer);
-    buffer = parsed.rest;
-
-    for (const item of parsed.events) {
-      if (!item) continue;
-
-      switch (item.event) {
-        case 'session':
-          handlers.onSession?.(item.data);
-          break;
-        case 'progress':
-          handlers.onProgress?.(item.data);
-          break;
-        case 'thinking_delta':
-          handlers.onThinkingDelta?.(item.data);
-          break;
-        case 'reply_delta':
-          handlers.onReplyDelta?.(item.data);
-          break;
-        case 'tool_result':
-          handlers.onToolResult?.(item.data);
-          break;
-        case 'done':
-          handlers.onDone?.(item.data);
-          break;
-        case 'error':
-          handlers.onError?.(item.data);
-          break;
-        default:
-          break;
-      }
-    }
-  }
-}
-```
-
-### 9.2 推荐的页面处理方式
-
-推荐逻辑：
-
-1. 发送消息后先进入 `connecting`
-2. 收到 `session` 后保存 `sessionId`
-3. 收到 `progress` 后刷新顶部状态文案
-4. 收到 `reply_delta` 后增量渲染 AI 回复
-5. 收到 `tool_result` 后渲染视频信息卡片
-6. 收到 `done` 后把消息状态切到完成
+- 服务重启后会话丢失
+- 多实例部署时会话上下文不稳定
+- 当前更适合单机开发环境或轻量场景
 
 ---
 
-## 10. 下载处理方案
+## 8. 前端对接注意事项
 
-### 10.1 结论先行
-
-前端不要直接使用 `parsedData.videoUrl` 或 `parsedData.audioUrl` 作为最终下载入口。
-
-正确做法是：
-
-- 视频下载：调用 `GET /api/download?type=video&url=${shareUrl}&title=${title}`
-- 音频下载：调用 `GET /api/download?type=audio&url=${shareUrl}&title=${title}`
+## 8.1 不能使用原生 `EventSource`
 
 原因：
 
-- `/api/download` 会统一复用后端解析与缓存逻辑
-- 音频场景下，后端可能需要走“直接音频流”或“从视频提取音频”两种路径
-- 前端直接使用 `audioUrl` / `videoUrl` 会绕过后端稳定契约
+- `EventSource` 只支持 GET
+- 当前接口是 `POST`
+- 当前接口必须携带 JSON body
 
-### 10.2 下载按钮展示建议
+正确方式：
 
-收到 `tool_result` 或 `done` 后，如果存在 `parsedData.shareUrl`，就可以展示下载按钮。
+- 使用 `fetch`
+- 通过 `response.body.getReader()` 消费流
 
-推荐规则：
-
-- 永远基于 `shareUrl` 构造下载地址
-- 视频按钮：默认展示
-- 音频按钮：
-  - `audioReady === true` 时文案用“下载原声音频”
-  - 否则文案用“提取并下载音频”
-
-### 10.3 下载 URL 构造示例
-
-```ts
-export function buildDownloadUrl(params: {
-  type: 'video' | 'audio';
-  shareUrl: string;
-  title?: string;
-}) {
-  const search = new URLSearchParams({
-    type: params.type,
-    url: params.shareUrl
-  });
-
-  if (params.title) {
-    search.set('title', params.title);
-  }
-
-  return `/api/download?${search.toString()}`;
-}
-```
-
-### 10.4 推荐下载方式：`fetch + blob`
+## 8.2 不能走现有通用 Axios `request` 封装
 
 原因：
 
-- 能统一处理 JSON 错误响应
-- 能在页面内控制 loading、重试和提示文案
-- 能避免浏览器直接跳到错误页
+- `src/utils/request.js` 会假设后端响应是 `{ code, message, data }`
+- SSE 流并不符合这个结构
+
+正确方式：
+
+- 单独实现 `src/api/ai.js`
+- 使用原生 `fetch` 处理流
+
+## 8.3 不能按旧版字段渲染
+
+当前项目里已有的 `AiParser.vue` / `src/api/ai.js` 使用了旧字段假设，例如：
+
+- `thinking_delta`
+- `shareUrl`
+- `cover`
+- `author`
+- `audioReady`
+- `videoUrl`
+- `audioUrl`
+
+这些字段与当前后端实现不一致。
+
+建议前端尽快统一为真实结构：
+
+- `coverUrl`
+- `normalizedVideoUrl`
+- `availableActions`
+- `audioSupported`
+- `videoSupported`
+- `message`
+
+## 8.4 `done` 才是本轮结束信号
+
+不要使用以下条件判断一轮完成：
+
+- 连接关闭前没有新内容了
+- 收到 `tool_result`
+- 收到某一段 `reply_delta`
+
+正确做法：
+
+- 以 `done` 为完成信号
+- 以 `error` 为失败信号
+
+## 8.5 `tool_result` 可能为空
+
+当用户消息中没有 URL 时：
+
+- 不会收到 `tool_result`
+- `done.parsedData` 也通常为 `null`
+
+前端必须兼容普通文本对话场景。
+
+## 8.6 当前没有下载直出接口信息
+
+从 `AiChatController` 及其关联 VO 来看，当前 AI 对话流只负责：
+
+- 给出结构化元数据
+- 告知可用动作
+- 生成自然语言回复
+
+它不直接返回：
+
+- 音频下载文件流
+- 视频下载文件流
+
+因此前端实现上应当把“AI 对话流”和“后续资源准备/下载接口”拆开。
+
+## 8.7 用户输入预校验建议
+
+虽然服务端会校验 `message` 非空，但前端仍建议先校验：
+
+- 非空白
+- 长度限制
+- 避免重复点击发送
+
+这样可以减少无效流连接。
+
+---
+
+## 9. 推荐的前端实现意见
+
+## 9.1 API 层实现意见
+
+建议在：
+
+- `D:/JavaCodeStudy/wangyiyun-music-front/src/api/ai.js`
+
+中单独维护 AI 流式接口，不要复用普通 Axios 实例。
+
+建议能力：
+
+- `streamAiChat(payload, handlers, signal)`
+- `parseSseBlocks(buffer)`
+
+建议事件处理回调：
+
+- `onSession`
+- `onProgress`
+- `onReplyDelta`
+- `onToolResult`
+- `onDone`
+- `onError`
+
+说明：
+
+- 当前可以移除 `onThinkingDelta`，或者保留但不期待后端触发
+
+## 9.2 页面状态机实现意见
+
+建议页面状态最少包含：
 
 ```ts
-function getFilenameFromDisposition(disposition: string | null, fallback: string) {
-  if (!disposition) return fallback;
+type StreamStatus = 'idle' | 'connecting' | 'streaming' | 'completed' | 'error'
+```
 
-  const match = disposition.match(/filename=\"?([^\";]+)\"?/i);
-  if (!match) return fallback;
+每轮助手消息建议维护：
 
-  try {
-    return decodeURIComponent(match[1]);
-  } catch {
-    return match[1];
-  }
-}
-
-export async function downloadParsedMedia(params: {
-  type: 'video' | 'audio';
-  shareUrl: string;
-  title?: string;
-}) {
-  const response = await fetch(buildDownloadUrl(params));
-  const contentType = response.headers.get('content-type') || '';
-
-  if (!response.ok || contentType.includes('application/json')) {
-    const errorResult = await response.json().catch(() => null);
-    throw new Error(errorResult?.message || '下载失败');
-  }
-
-  const blob = await response.blob();
-  const disposition = response.headers.get('content-disposition');
-  const defaultName = `${params.title || 'douyin'}.${params.type === 'video' ? 'mp4' : 'mp3'}`;
-  const filename = getFilenameFromDisposition(disposition, defaultName);
-
-  const blobUrl = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = blobUrl;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(blobUrl);
+```ts
+interface AssistantMessageState {
+	status: StreamStatus
+	content: string
+	progressMessage: string
+	thinkingSummary: string
+	toolStatus: {
+		status?: string
+		warnings?: string[]
+	} | null
+	parsedData: {
+		title?: string
+		coverUrl?: string
+		duration?: number
+		platform?: string
+		normalizedVideoUrl?: string
+		availableActions?: string[]
+		audioSupported?: boolean
+		videoSupported?: boolean
+		sourceVideoId?: string
+		message?: string
+	} | null
+	errorMessage: string
 }
 ```
 
-### 10.5 前端必须处理的下载风险
-
-前端需要显式考虑这些情况：
-
-- 用户点击下载时，`shareUrl` 为空
-- `toolStatus.status === 'suspect'`
-- 音频按钮点击后，服务端提取音频耗时更长
-- 下载接口失败时返回的是 JSON，而不是文件流
-
-建议的产品提示：
-
-- `shareUrl` 缺失：`当前解析结果缺少可下载链接，请重新解析`
-- `status === suspect`：`解析结果可能不完整，请确认链接后再下载`
-- 音频提取中：`正在准备音频文件，请稍候`
-
----
-
-## 11. 会话续聊建议
-
-如果产品是多轮聊天，前端必须保存 `sessionId`。
-
-推荐方式：
-
-- 当前聊天窗口内保存在状态管理中
-- 刷新页面前如果需要延续上下文，可保存到本地存储
-
-续聊时：
-
-- 下一次调用 `/api/ai/chat/stream`，把上次拿到的 `sessionId` 带回去
-
-不带 `sessionId` 的效果：
-
-- 后端会新建一轮会话
-- 之前的上下文不会参与本轮 AI 回复
-
----
-
-## 12. 错误处理建议
-
-### 12.1 建连前错误
-
-如果请求还没建立 SSE，就可能直接收到普通 JSON 错误，例如：
-
-```json
-{
-  "code": 400,
-  "message": "message is required",
-  "data": null
-}
-```
-
-前端处理：
-
-- 先判断 `response.ok`
-- 若失败，优先按 JSON 解析错误信息
-
-### 12.2 流中错误
-
-如果 SSE 已经建立，后端会发：
+推荐状态流转：
 
 ```text
-event: error
-data: {"error":"AI stream failed"}
+idle
+-> connecting
+-> streaming
+-> completed
+or
+-> error
 ```
 
-前端处理：
+## 9.3 页面渲染实现意见
 
-- 停止继续等待新内容
-- 把当前消息标记为失败态
-- 允许用户重试
+聊天区建议分三块展示：
 
-### 12.3 限流
+1. 进度区
+   - 展示 `progress.message`
+2. 回复区
+   - 增量拼接 `reply_delta.delta`
+3. 结构化结果区
+   - 展示 `parsedData`
 
-AI 接口会走独立限流。
+结构化卡片建议至少展示：
 
-前端建议提示：
+- 标题 `title`
+- 封面 `coverUrl`
+- 平台 `platform`
+- 时长 `duration`
+- 原始视频 ID `sourceVideoId`
+- 可用动作 `availableActions`
+- 后端提示 `message`
 
-- `请求过于频繁，请稍后再试`
+## 9.4 会话管理实现意见
+
+建议前端：
+
+- 在页面状态中保存 `sessionId`
+- 下一轮发送时透传 `sessionId`
+
+如果产品需要刷新后继续：
+
+- 可以落 localStorage
+
+但要明确告知：
+
+- 后端只做内存会话
+- 服务重启后上下文会丢失
+
+## 9.5 解析结果后续动作实现意见
+
+当前 `parsedData.availableActions` 已经明确告诉前端有哪些后续能力。
+
+建议前端据此决定按钮显隐，而不是硬编码。
+
+例如：
+
+- 包含 `AUDIO_PREPARE` 时显示“准备音频”
+- 包含 `VIDEO_DOWNLOAD` 时显示“下载视频”
+
+同时结合：
+
+- `audioSupported`
+- `videoSupported`
+
+做最终按钮禁用控制。
+
+## 9.6 错误处理实现意见
+
+建议区分三类错误：
+
+1. HTTP 错误
+   - 如 400、500
+2. SSE 业务错误
+   - 收到 `event: error`
+3. 前端流解析错误
+   - 比如 JSON 解析失败、网络中断、Abort
+
+推荐处理方式：
+
+- HTTP 错误：优先读取 JSON message
+- SSE 错误：更新消息失败态
+- Abort：标记为用户主动中断，不弹系统错误
+
+## 9.7 兼容性实现意见
+
+建议 API 解析层做以下保护：
+
+- 忽略未知事件名
+- 忽略空 `data`
+- 忽略注释行
+- 不因为单条事件解析失败而让整个流崩掉
+
+这是因为 SSE 在后续扩展时，事件种类可能增加。
 
 ---
 
-## 13. 前端最小落地流程
+## 10. 推荐请求/消费示例
 
-```text
-用户输入消息
--> 调用 POST /api/ai/chat/stream
--> 读取 session / progress / reply_delta
--> 如果收到 tool_result，则渲染视频卡片和下载按钮
--> 如果收到 done，则完成本轮消息
--> 用户点击下载按钮
--> 调用 GET /api/download 下载视频或音频
+```js
+export async function streamAiChat(payload, handlers = {}, signal) {
+	const response = await fetch('/api/ai/chat/stream', {
+		method: 'POST',
+		headers: {
+			Accept: 'text/event-stream',
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify(payload),
+		signal,
+	})
+
+	if (!response.ok) {
+		const errorResult = await response.json().catch(() => null)
+		throw new Error(errorResult?.message || '流式请求失败')
+	}
+
+	if (!response.body) {
+		throw new Error('当前浏览器不支持流式读取')
+	}
+
+	const reader = response.body.getReader()
+	const decoder = new TextDecoder('utf-8')
+	let buffer = ''
+
+	while (true) {
+		const { value, done } = await reader.read()
+
+		if (done) {
+			buffer += decoder.decode()
+			break
+		}
+
+		buffer += decoder.decode(value, { stream: true })
+		const { events, rest } = parseSseBlocks(buffer)
+		buffer = rest
+
+		for (const item of events) {
+			switch (item.event) {
+				case 'session':
+					handlers.onSession?.(item.data)
+					break
+				case 'progress':
+					handlers.onProgress?.(item.data)
+					break
+				case 'reply_delta':
+					handlers.onReplyDelta?.(item.data)
+					break
+				case 'tool_result':
+					handlers.onToolResult?.(item.data)
+					break
+				case 'done':
+					handlers.onDone?.(item.data)
+					break
+				case 'error':
+					handlers.onError?.(item.data)
+					break
+				default:
+					break
+			}
+		}
+	}
+}
 ```
+
+`parseSseBlocks` 需要注意：
+
+- 以空行切事件块
+- 支持 `\r\n`
+- 忽略注释行
+- 只解析 `event:` 和 `data:`
 
 ---
 
-## 14. 结论
+## 11. 与当前前端代码的差异建议
 
-前端对接这个接口时，应把它理解为“两条数据流并行输出”：
+当前前端文件：
 
-- 一条是聊天文本流：`thinking_delta`、`reply_delta`
-- 一条是工具结果流：`tool_result`、`done.parsedData`
+- `D:/JavaCodeStudy/wangyiyun-music-front/src/api/ai.js`
+- `D:/JavaCodeStudy/wangyiyun-music-front/src/views/AiParser.vue`
 
-最稳妥的接入方式是：
+存在以下明显不一致：
 
-1. 用 `fetch + ReadableStream` 消费 `/api/ai/chat/stream`
-2. 用 `tool_result` 驱动视频卡片和下载按钮状态
-3. 下载统一走 `/api/download`
-4. 不直接使用 `videoUrl`、`audioUrl` 作为前端最终下载入口
+| 前端当前假设                   | 后端当前真实实现                                     |
+| ------------------------------ | ---------------------------------------------------- |
+| 会收到 `thinking_delta`        | 当前不会发送                                         |
+| `parsedData.cover`             | 实际是 `parsedData.coverUrl`                         |
+| `parsedData.shareUrl`          | 实际是 `parsedData.normalizedVideoUrl`               |
+| `parsedData.author`            | 当前未返回                                           |
+| `parsedData.audioReady`        | 当前未返回                                           |
+| `parsedData.videoUrl/audioUrl` | 当前未返回                                           |
+| 下载逻辑基于 `shareUrl`        | 当前 AI 对话流仅提供 `normalizedVideoUrl` 和动作建议 |
+
+实现建议：
+
+1. 先以本文档修正文档与类型定义
+2. 再同步调整 `src/api/ai.js`
+3. 最后调整 `AiParser.vue` 的字段映射和按钮逻辑
+
+这样改动面最小，也最符合 KISS 和 DRY。
+
+---
+
+## 12. 总结
+
+当前 `AiChatController` 对前端暴露的是一个典型的：
+
+- `POST`
+- `JSON 请求体`
+- `SSE 流式返回`
+
+接口。
+
+前端接入时最重要的不是“怎么把流读出来”，而是准确理解当前真实协议：
+
+- 正常时返回 SSE，不走统一 `Result`
+- 事件核心是 `session / progress / tool_result / reply_delta / done / error`
+- 当前没有 `thinking_delta`
+- 当前 `parsedData` 字段是 `VideoParseResultVO`，不能继续按旧字段消费
+
+如果前端严格按本文档实现，能够稳定完成：
+
+- AI 文本流渲染
+- 视频解析结果展示
+- 会话续传
+- 错误处理
+
+如果要进一步完善，优先建议下一步做两件事：
+
+1. 统一前后端 `parsedData` 类型定义，避免继续漂移
+2. 明确“后续音频准备/视频下载”接口契约，避免 AI 对话页自行猜测下载字段
