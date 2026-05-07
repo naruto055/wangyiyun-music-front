@@ -2,82 +2,61 @@
  * AI 流式解析相关工具
  */
 
+const AI_STREAM_URL = '/api/ai/chat/stream'
+const SUPPORTED_STREAM_EVENTS = new Set(['session', 'progress', 'reply_delta', 'tool_result', 'done', 'error'])
+
 /**
  * 解析 SSE 事件块
  * @param {string} buffer - 当前缓冲文本
  * @returns {{ events: Array<{ event: string, data: any }>, rest: string }}
  */
 export function parseSseBlocks(buffer) {
-	const normalizedBuffer = buffer.replace(/\r\n/g, '\n')
+	const normalizedBuffer = buffer.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
 	const chunks = normalizedBuffer.split('\n\n')
 	const completeBlocks = chunks.slice(0, -1)
 	const rest = chunks[chunks.length - 1] || ''
+	const events = []
 
-	const events = completeBlocks
-		.map((block) => block.trim())
-		.filter(Boolean)
-		.map((block) => {
-			const lines = block
-				.split('\n')
-				.map((line) => line.trim())
-				.filter((line) => line && !line.startsWith(':'))
+	for (const block of completeBlocks) {
+		if (!block.trim()) {
+			continue
+		}
 
-			const eventLine = lines.find((line) => line.startsWith('event:'))
-			const dataLine = lines.find((line) => line.startsWith('data:'))
+		let eventName = ''
+		const dataLines = []
 
-			if (!eventLine || !dataLine) {
-				return null
+		for (const rawLine of block.split('\n')) {
+			const line = rawLine.trim()
+
+			if (!line || line.startsWith(':')) {
+				continue
 			}
 
-			try {
-				return {
-					event: eventLine.slice(6).trim(),
-					data: JSON.parse(dataLine.slice(5).trim()),
-				}
-			} catch {
-				return null
+			if (line.startsWith('event:')) {
+				eventName = line.slice(6).trim()
+				continue
 			}
-		})
-		.filter(Boolean)
+
+			if (line.startsWith('data:')) {
+				dataLines.push(line.slice(5).trim())
+			}
+		}
+
+		if (!eventName || !SUPPORTED_STREAM_EVENTS.has(eventName) || dataLines.length === 0) {
+			continue
+		}
+
+		try {
+			events.push({
+				event: eventName,
+				data: JSON.parse(dataLines.join('\n')),
+			})
+		} catch {
+			// 单条事件解析失败时直接忽略，避免整条流中断
+		}
+	}
 
 	return { events, rest }
-}
-
-/**
- * 构造下载地址
- * @param {{ type: 'video' | 'audio', shareUrl: string, title?: string }} params
- * @returns {string}
- */
-export function buildDownloadUrl(params) {
-	const search = new URLSearchParams({
-		type: params.type,
-		url: params.shareUrl,
-	})
-
-	if (params.title) {
-		search.set('title', params.title)
-	}
-
-	return `/ai-api/download?${search.toString()}`
-}
-
-/**
- * 从 Content-Disposition 获取文件名
- * @param {string | null} disposition
- * @param {string} fallback
- * @returns {string}
- */
-export function getFilenameFromDisposition(disposition, fallback) {
-	if (!disposition) return fallback
-
-	const match = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i)
-	if (!match) return fallback
-
-	try {
-		return decodeURIComponent(match[1])
-	} catch {
-		return match[1]
-	}
 }
 
 /**
@@ -86,16 +65,15 @@ export function getFilenameFromDisposition(disposition, fallback) {
  * @param {{
  *   onSession?: (payload: { sessionId: string }) => void,
  *   onProgress?: (payload: { stage?: string, message?: string }) => void,
- *   onThinkingDelta?: (payload: { delta: string }) => void,
  *   onReplyDelta?: (payload: { delta: string }) => void,
  *   onToolResult?: (payload: { parsedData: object | null, toolStatus: object | null }) => void,
- *   onDone?: (payload: object) => void,
+ *   onDone?: (payload: { thinking?: string, reply?: string, sessionId?: string, toolStatus?: object | null, parsedData?: object | null }) => void,
  *   onError?: (payload: { error: string }) => void,
  * }} handlers
  * @param {AbortSignal} [signal]
  */
 export async function streamAiChat(payload, handlers = {}, signal) {
-	const response = await fetch('/ai-api/ai/chat/stream', {
+	const response = await fetch(AI_STREAM_URL, {
 		method: 'POST',
 		headers: {
 			Accept: 'text/event-stream',
@@ -112,6 +90,32 @@ export async function streamAiChat(payload, handlers = {}, signal) {
 
 	if (!response.body) {
 		throw new Error('当前浏览器不支持流式读取')
+	}
+
+	// 统一在一处处理事件分发，避免收尾阶段漏掉已支持事件
+	const dispatchEvent = (item) => {
+		switch (item.event) {
+			case 'session':
+				handlers.onSession?.(item.data)
+				break
+			case 'progress':
+				handlers.onProgress?.(item.data)
+				break
+			case 'reply_delta':
+				handlers.onReplyDelta?.(item.data)
+				break
+			case 'tool_result':
+				handlers.onToolResult?.(item.data)
+				break
+			case 'done':
+				handlers.onDone?.(item.data)
+				break
+			case 'error':
+				handlers.onError?.(item.data)
+				break
+			default:
+				break
+		}
 	}
 
 	const reader = response.body.getReader()
@@ -131,69 +135,14 @@ export async function streamAiChat(payload, handlers = {}, signal) {
 		buffer = parsed.rest
 
 		for (const item of parsed.events) {
-			switch (item.event) {
-				case 'session':
-					handlers.onSession?.(item.data)
-					break
-				case 'progress':
-					handlers.onProgress?.(item.data)
-					break
-				case 'thinking_delta':
-					handlers.onThinkingDelta?.(item.data)
-					break
-				case 'reply_delta':
-					handlers.onReplyDelta?.(item.data)
-					break
-				case 'tool_result':
-					handlers.onToolResult?.(item.data)
-					break
-				case 'done':
-					handlers.onDone?.(item.data)
-					break
-				case 'error':
-					handlers.onError?.(item.data)
-					break
-				default:
-					break
-			}
+			dispatchEvent(item)
 		}
 	}
 
 	if (buffer.trim()) {
 		const parsed = parseSseBlocks(`${buffer}\n\n`)
 		for (const item of parsed.events) {
-			if (item.event === 'done') {
-				handlers.onDone?.(item.data)
-			}
+			dispatchEvent(item)
 		}
 	}
-}
-
-/**
- * 下载解析后的媒体资源
- * @param {{ type: 'video' | 'audio', shareUrl: string, title?: string }} params
- */
-export async function downloadParsedMedia(params) {
-	const response = await fetch(buildDownloadUrl(params))
-	const contentType = response.headers.get('content-type') || ''
-
-	if (!response.ok || contentType.includes('application/json')) {
-		const errorResult = await response.json().catch(() => null)
-		throw new Error(errorResult?.message || '下载失败')
-	}
-
-	const blob = await response.blob()
-	const disposition = response.headers.get('content-disposition')
-	const extension = params.type === 'video' ? 'mp4' : 'mp3'
-	const fallback = `${params.title || 'media'}.${extension}`
-	const filename = getFilenameFromDisposition(disposition, fallback)
-
-	const blobUrl = URL.createObjectURL(blob)
-	const link = document.createElement('a')
-	link.href = blobUrl
-	link.download = filename
-	document.body.appendChild(link)
-	link.click()
-	link.remove()
-	URL.revokeObjectURL(blobUrl)
 }
