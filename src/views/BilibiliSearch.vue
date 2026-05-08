@@ -160,11 +160,11 @@
 <script setup>
 import { ref } from 'vue'
 import { searchBilibiliVideos } from '@/api/bilibili'
-import { parseVideo, prepareAudio } from '@/api/video'
 import { useToast } from '@/composables/useToast'
 import { useDebounceFn } from '@/composables/useDebounce'
 import { usePlayerStore } from '@/stores/player'
-import { adaptVideoToTrack } from '@/utils/trackAdapter'
+import { resolveVideoPlaybackTrack } from '@/utils/videoPlayback'
+import { createStreamFallbackResolver } from '@/utils/videoFallback'
 import Header from '@/components/layout/Header.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -189,7 +189,7 @@ const videoStates = ref({})
 
 // 阶段提示文本
 const loadingStages = [
-	'正在解析视频信息...',
+	'正在获取音频流...',
 	'正在准备音频资源...',
 	'正在接入播放器...',
 	'即将开始播放...',
@@ -314,37 +314,46 @@ async function handlePlayVideo(video) {
 	toast.info(loadingStages[0] + ' (预计10-60秒)')
 
 	try {
-		const parseResult = await parseVideo({
-			videoUrl: video.url,
-			platform: 'BILIBILI',
-			includeAvailableActions: true,
-		})
-
-		const canPrepareAudio = parseResult.audioSupported && parseResult.availableActions?.includes('AUDIO_PREPARE')
-		if (!canPrepareAudio) {
-			toast.warning(`《${video.title}》当前暂不支持音频播放`)
-			return
-		}
-
-		videoStates.value[video.bvid].currentStage = loadingStages[1]
-
-		const audioResult = await prepareAudio({
-			videoUrl: parseResult.normalizedVideoUrl || video.url,
-			platform: parseResult.platform || 'BILIBILI',
-			preferredAudioFormat: 'mp3',
+		const { track, mode } = await resolveVideoPlaybackTrack({
+			payload: {
+				videoUrl: video.url,
+				platform: 'BILIBILI',
+				preferredAudioFormat: 'mp3',
+				allowFallback: true,
+			},
+			metadata: {
+				title: video.title,
+				duration: video.duration,
+				platform: 'BILIBILI',
+			},
 		})
 
 		videoStates.value[video.bvid].currentStage = loadingStages[2]
 
-		const track = adaptVideoToTrack(audioResult, {
-			title: parseResult.title || video.title,
-			duration: parseResult.duration,
-			platform: parseResult.platform || 'BILIBILI',
-		})
-
 		playerStore.playTrack(track)
+		playerStore.setPlaybackFallbackResolver(
+			mode === 'stream'
+				? createStreamFallbackResolver({
+						getPayload: () => ({
+							videoUrl: video.url,
+							platform: 'BILIBILI',
+						}),
+						getMetadata: () => ({
+							title: video.title,
+							duration: video.duration,
+							platform: 'BILIBILI',
+						}),
+						playerStore,
+						toast,
+						onBeforePrepare: () => {
+							videoStates.value[video.bvid].currentStage = loadingStages[1]
+						},
+					})
+				: null
+		)
 
-		toast.success(`《${video.title}》音频已准备完成，开始播放`, 5000)
+		const successMessage = mode === 'stream' ? `《${video.title}》音频流已接入，开始播放` : `《${video.title}》临时音频已准备完成，开始播放`
+		toast.success(successMessage, 5000)
 	} catch (error) {
 		console.error('播放准备失败:', error)
 		handleParseError(error, video.title)

@@ -46,7 +46,8 @@ import { streamAiChat } from '@/api/ai'
 import { downloadVideo, prepareAudio } from '@/api/video'
 import { useToast } from '@/composables/useToast'
 import { usePlayerStore } from '@/stores/player'
-import { adaptVideoToTrack } from '@/utils/trackAdapter'
+import { resolveVideoPlaybackTrack } from '@/utils/videoPlayback'
+import { createStreamFallbackResolver } from '@/utils/videoFallback'
 import Header from '@/components/layout/Header.vue'
 import AiChatMessageItem from '@/components/ai-parser/AiChatMessageItem.vue'
 import AiParserComposer from '@/components/ai-parser/AiParserComposer.vue'
@@ -435,20 +436,52 @@ async function handleDownload(item, type) {
 
 async function handlePlayAudio(item) {
 	try {
-		const audioResult = await prepareAudioResource(item, 'play')
-		if (!audioResult) return
+		const downloadKey = `${item.id}:play`
+		pendingDownloads.value = {
+			...pendingDownloads.value,
+			[downloadKey]: true,
+		}
 
-		const track = adaptVideoToTrack(audioResult, {
-			coverUrl: item.parsedData?.coverUrl,
-			platform: item.parsedData?.platform,
-			title: item.parsedData?.title,
-			duration: item.parsedData?.duration,
+		const { track, mode } = await resolveVideoPlaybackTrack({
+			payload: {
+				...buildMediaRequestPayload(item),
+				preferredAudioFormat: 'mp3',
+				allowFallback: true,
+			},
+			metadata: {
+				coverUrl: item.parsedData?.coverUrl,
+				platform: item.parsedData?.platform,
+				title: item.parsedData?.title,
+				duration: item.parsedData?.duration,
+			},
 		})
 
 		playerStore.playTrack(track)
-		toast.success('音频已准备完成，开始播放')
+		playerStore.setPlaybackFallbackResolver(
+			mode === 'stream'
+				? createStreamFallbackResolver({
+						getPayload: () => buildMediaRequestPayload(item),
+						getMetadata: () => ({
+							coverUrl: item.parsedData?.coverUrl,
+							platform: item.parsedData?.platform,
+							title: item.parsedData?.title,
+							duration: item.parsedData?.duration,
+						}),
+						playerStore,
+						toast,
+					})
+				: null
+		)
+
+		const successMessage = mode === 'stream' ? '音频流已接入，开始播放' : '音频已准备完成，开始播放'
+		toast.success(successMessage)
 	} catch (error) {
 		toast.error(error.message || '播放失败')
+	} finally {
+		const downloadKey = `${item.id}:play`
+		const nextPendingDownloads = { ...pendingDownloads.value }
+		delete nextPendingDownloads[downloadKey]
+		pendingDownloads.value = nextPendingDownloads
 	}
 }
 

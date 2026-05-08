@@ -23,6 +23,24 @@ export function parseVideo(data) {
 }
 
 /**
+ * 快速获取可播放音频流
+ * @param {Object} data - 请求参数
+ * @param {string} data.videoUrl - 视频链接，建议优先传规范化后的页面链接
+ * @param {string} data.platform - 平台类型（当前前端仅对 BILIBILI 启用）
+ * @param {string} [data.preferredQuality] - 期望音质
+ * @param {string} [data.preferredAudioFormat] - 期望音频格式
+ * @param {boolean} [data.allowFallback=true] - 是否允许回退到临时音频资源
+ * @returns {Promise<Object>} 音频流结果
+ */
+export function streamAudio(data) {
+	return request({
+		url: '/video/audio/stream',
+		method: 'post',
+		data,
+	})
+}
+
+/**
  * 按需准备音频资源
  * @param {Object} data - 请求参数
  * @param {string} data.videoUrl - 建议使用 parse 接口返回的 normalizedVideoUrl

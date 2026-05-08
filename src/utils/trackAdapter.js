@@ -3,6 +3,64 @@
  * 用于将不同数据源（音乐详情、视频解析）统一转换为播放器需要的格式
  */
 
+function guessAudioFormatFromMimeType(mimeType) {
+	const mimeTypeMap = {
+		'audio/mpeg': 'mp3',
+		'audio/mp4': 'm4a',
+		'audio/aac': 'aac',
+		'audio/ogg': 'ogg',
+		'audio/webm': 'webm',
+	}
+
+	return mimeTypeMap[mimeType] || 'mp3'
+}
+
+/**
+ * 将音频流结果转换为音轨对象
+ * @param {Object} audioStreamResult - 音频流结果
+ * @param {Object} [metadata={}] - 补充元数据
+ * @returns {Object} 统一的音轨对象
+ */
+export function adaptStreamToTrack(audioStreamResult, metadata = {}) {
+	const format = guessAudioFormatFromMimeType(audioStreamResult.mimeType)
+
+	return {
+		id: `video_stream_${audioStreamResult.sourceVideoId}`,
+		title: audioStreamResult.title || metadata.title,
+		coverUrl: metadata.coverUrl || null,
+		duration: audioStreamResult.duration ?? metadata.duration ?? 0,
+		audioSources: [
+			{
+				url: audioStreamResult.streamUrl,
+				format,
+				quality: 'high',
+				headers: audioStreamResult.headers || {},
+				mimeType: audioStreamResult.mimeType || '',
+				sourceType: audioStreamResult.sourceType || '',
+				fallbackUsed: Boolean(audioStreamResult.fallbackUsed),
+			},
+		],
+		artistNames: '视频音频',
+		fileUrl: null,
+		lyrics: null,
+		playCount: 0,
+		favoriteCount: 0,
+		releaseDate: null,
+		albumName: '视频流播放',
+		categoryName: '其他',
+		artists: [],
+		tags: ['视频音频', '音频流'],
+		_source: 'video_stream',
+		_platform: metadata.platform || null,
+		_sourceVideoId: audioStreamResult.sourceVideoId,
+		_expiresAt: audioStreamResult.expireAt ?? null,
+		_isTemporary: audioStreamResult.sourceType === 'YTDLP_FALLBACK',
+		_headers: audioStreamResult.headers || {},
+		_streamSourceType: audioStreamResult.sourceType || '',
+		_fallbackUsed: Boolean(audioStreamResult.fallbackUsed),
+	}
+}
+
 /**
  * 将已准备好的音频资源转换为音轨对象
  * @param {Object} audioPrepareResult - 音频准备结果

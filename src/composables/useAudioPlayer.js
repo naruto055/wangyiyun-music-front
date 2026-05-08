@@ -1,5 +1,6 @@
 import { ref, watch, onUnmounted } from 'vue'
 import { usePlayerStore } from '@/stores/player'
+import { toast } from '@/composables/useToast'
 
 /**
  * 全局单例 Audio 实例
@@ -125,7 +126,14 @@ export function useAudioPlayer() {
 					break
 			}
 
+			const fallbackResolver = playerStore.consumePlaybackFallbackResolver()
+			if (fallbackResolver && [error.MEDIA_ERR_NETWORK, error.MEDIA_ERR_DECODE, error.MEDIA_ERR_SRC_NOT_SUPPORTED].includes(error.code)) {
+				fallbackResolver()
+				return
+			}
+
 			console.error(errorMessage, error)
+			toast.error(errorMessage)
 
 			// 尝试播放下一曲
 			setTimeout(() => {

@@ -22,6 +22,7 @@ export const usePlayerStore = defineStore('player', () => {
 	const duration = ref(0) // 总时长（秒）
 	const volume = ref(0.8) // 音量 (0-1)
 	const loading = ref(false) // 音频加载状态
+	const playbackFallbackResolver = ref(null) // 当前播放失败时的回退处理器
 
 	// ========== 播放列表 ==========
 	const playlist = ref([]) // 播放队列
@@ -106,6 +107,24 @@ export const usePlayerStore = defineStore('player', () => {
 
 		// 标记为正在播放
 		isPlaying.value = true
+	}
+
+	/**
+	 * 设置播放失败时的回退处理器
+	 * @param {Function|null} resolver
+	 */
+	function setPlaybackFallbackResolver(resolver) {
+		playbackFallbackResolver.value = typeof resolver === 'function' ? resolver : null
+	}
+
+	/**
+	 * 消费一次性播放回退处理器
+	 * @returns {Function|null}
+	 */
+	function consumePlaybackFallbackResolver() {
+		const resolver = playbackFallbackResolver.value
+		playbackFallbackResolver.value = null
+		return resolver
 	}
 
 	/**
@@ -408,6 +427,7 @@ export const usePlayerStore = defineStore('player', () => {
 		duration,
 		volume,
 		loading,
+		playbackFallbackResolver,
 		playlist,
 		currentIndex,
 		playMode,
@@ -435,5 +455,7 @@ export const usePlayerStore = defineStore('player', () => {
 		setVolume,
 		seek,
 		setLoading,
+		setPlaybackFallbackResolver,
+		consumePlaybackFallbackResolver,
 	}
 })

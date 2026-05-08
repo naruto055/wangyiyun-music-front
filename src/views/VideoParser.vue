@@ -312,7 +312,9 @@ import axios from 'axios'
 import { downloadVideo, parseVideo, prepareAudio } from '@/api/video'
 import { usePlayerStore } from '@/stores/player'
 import { useToast } from '@/composables/useToast'
-import { adaptVideoToTrack } from '@/utils/trackAdapter'
+import { resolveVideoPlaybackTrack } from '@/utils/videoPlayback'
+import { canUseVideoStreamPlayback } from '@/utils/videoStream'
+import { createStreamFallbackResolver } from '@/utils/videoFallback'
 import Header from '@/components/layout/Header.vue'
 import Card from '@/components/ui/card/Card.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -361,7 +363,8 @@ const availableActionText = computed(() => {
 	}
 
 	const actionTextMap = {
-		AUDIO_PREPARE: '可播放音频',
+		AUDIO_STREAM: '可快速播放',
+		AUDIO_PREPARE: '可准备音频',
 		AUDIO_DOWNLOAD: '可下载音频',
 		VIDEO_DOWNLOAD: '可下载视频',
 	}
@@ -370,7 +373,7 @@ const availableActionText = computed(() => {
 })
 
 const canPlayAudio = computed(() => {
-	return Boolean(parseResult.value?.audioSupported) && hasAvailableAction('AUDIO_PREPARE')
+	return Boolean(parseResult.value?.audioSupported) && canUseVideoStreamPlayback(parseResult.value)
 })
 
 const canDownloadAudio = computed(() => {
@@ -510,21 +513,45 @@ async function handlePlay() {
 	if (!parseResult.value) return
 
 	try {
-		const audioResult = await prepareAudioResource('play')
-		if (!audioResult) return
-
-		const track = adaptVideoToTrack(audioResult, {
-			coverUrl: parseResult.value.coverUrl,
-			platform: parseResult.value.platform,
-			title: parseResult.value.title,
-			duration: parseResult.value.duration,
+		activeAction.value = 'play'
+		const { track, mode } = await resolveVideoPlaybackTrack({
+			payload: {
+				...buildMediaRequestPayload(),
+				preferredAudioFormat: 'mp3',
+				allowFallback: true,
+			},
+			metadata: {
+				coverUrl: parseResult.value.coverUrl,
+				platform: parseResult.value.platform,
+				title: parseResult.value.title,
+				duration: parseResult.value.duration,
+			},
 		})
 
 		playerStore.playTrack(track)
-		toast.success('音频已准备完成，开始播放')
+		playerStore.setPlaybackFallbackResolver(
+			mode === 'stream'
+				? createStreamFallbackResolver({
+						getPayload: () => buildMediaRequestPayload(),
+						getMetadata: () => ({
+							coverUrl: parseResult.value.coverUrl,
+							platform: parseResult.value.platform,
+							title: parseResult.value.title,
+							duration: parseResult.value.duration,
+						}),
+						playerStore,
+						toast,
+					})
+				: null
+		)
+
+		const successMessage = mode === 'stream' ? '音频流已接入，开始播放' : '音频已准备完成，开始播放'
+		toast.success(successMessage)
 	} catch (err) {
 		console.error('播放准备失败:', err)
 		toast.error('播放失败: ' + (err.message || '请稍后重试'))
+	} finally {
+		activeAction.value = ''
 	}
 }
 

@@ -118,7 +118,7 @@ export function getRiskText(item, hasAnyFollowupAction) {
 		return '当前结果未返回可执行动作，请重新解析或继续追问。'
 	}
 
-	return '后续动作会根据 normalizedVideoUrl、platform 和 availableActions 调用现有视频接口。'
+	return '后续动作会根据 normalizedVideoUrl、platform 和 availableActions 选择快速播放或资源准备接口。'
 }
 
 export function getToolStatusLabel(toolStatus) {
@@ -187,7 +187,7 @@ export function hasAvailableAction(item, action) {
 }
 
 export function canPlayAudioMessage(item) {
-	return Boolean(item.parsedData?.audioSupported) && hasAvailableAction(item, 'AUDIO_PREPARE')
+	return Boolean(item.parsedData?.audioSupported) && canUseVideoStreamPlayback(item.parsedData)
 }
 
 export function canDownloadAudioMessage(item) {
@@ -201,3 +201,4 @@ export function canDownloadVideoMessage(item) {
 export function hasAnyFollowupAction(item) {
 	return canPlayAudioMessage(item) || canDownloadAudioMessage(item) || canDownloadVideoMessage(item)
 }
+import { canUseVideoStreamPlayback } from '@/utils/videoStream'
