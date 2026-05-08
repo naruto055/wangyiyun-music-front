@@ -187,7 +187,11 @@ export function hasAvailableAction(item, action) {
 }
 
 export function canPlayAudioMessage(item) {
-	return Boolean(item.parsedData?.audioSupported) && canUseVideoStreamPlayback(item.parsedData)
+	return (
+		Boolean(item.parsedData?.audioSupported) &&
+		hasAvailableAction(item, 'AUDIO_STREAM') &&
+		canUseVideoStreamPlayback(item.parsedData)
+	)
 }
 
 export function canDownloadAudioMessage(item) {

@@ -77,4 +77,29 @@ describe('videoPlayback', () => {
 		expect(prepareAudioMock).toHaveBeenCalledTimes(1)
 		expect(result.mode).toBe('prepare')
 	})
+
+	it('当后端未声明 AUDIO_STREAM 时，B站也应直接走 prepareAudio', async () => {
+		prepareAudioMock.mockResolvedValue({
+			sourceVideoId: 'BV1prepare',
+			title: 'B站准备音频测试',
+			audioUrl: 'http://localhost:8910/temp-audio/BV1prepare.mp3',
+			audioFormat: 'mp3',
+		})
+
+		const result = await resolveVideoPlaybackTrack({
+			payload: {
+				videoUrl: 'https://www.bilibili.com/video/BV1prepare',
+				platform: 'BILIBILI',
+				availableActions: ['AUDIO_PREPARE'],
+			},
+			metadata: {
+				title: 'B站准备音频测试',
+				platform: 'BILIBILI',
+			},
+		})
+
+		expect(streamAudioMock).not.toHaveBeenCalled()
+		expect(prepareAudioMock).toHaveBeenCalledTimes(1)
+		expect(result.mode).toBe('prepare')
+	})
 })

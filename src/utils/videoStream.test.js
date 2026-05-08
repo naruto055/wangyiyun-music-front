@@ -25,13 +25,13 @@ describe('videoStream', () => {
 		).toBe(true)
 	})
 
-	it('当解析结果是B站但后端未声明 AUDIO_STREAM 时仍保守允许尝试流播放', () => {
+	it('当解析结果是B站但后端未声明 AUDIO_STREAM 时不允许走流播放链路', () => {
 		expect(
 			canUseVideoStreamPlayback({
 				platform: 'BILIBILI',
 				availableActions: ['AUDIO_PREPARE'],
 			})
-		).toBe(true)
+		).toBe(false)
 	})
 
 	it('非B站解析结果不走流播放链路', () => {
@@ -41,6 +41,14 @@ describe('videoStream', () => {
 				availableActions: ['AUDIO_STREAM'],
 			})
 		).toBe(false)
+	})
+
+	it('当没有可用动作列表时，保留B站专用入口的流播放兼容能力', () => {
+		expect(
+			canUseVideoStreamPlayback({
+				platform: 'BILIBILI',
+			})
+		).toBe(true)
 	})
 
 	it('当返回自定义请求头时仍先尝试直接播放', () => {

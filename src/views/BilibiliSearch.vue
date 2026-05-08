@@ -160,6 +160,7 @@
 <script setup>
 import { ref } from 'vue'
 import { searchBilibiliVideos } from '@/api/bilibili'
+import { parseVideo } from '@/api/video'
 import { useToast } from '@/composables/useToast'
 import { useDebounceFn } from '@/composables/useDebounce'
 import { usePlayerStore } from '@/stores/player'
@@ -314,17 +315,25 @@ async function handlePlayVideo(video) {
 	toast.info(loadingStages[0] + ' (预计10-60秒)')
 
 	try {
+		const parsedData = await parseVideo({
+			videoUrl: video.url,
+			platform: 'BILIBILI',
+			includeAvailableActions: true,
+		})
+
 		const { track, mode } = await resolveVideoPlaybackTrack({
 			payload: {
-				videoUrl: video.url,
-				platform: 'BILIBILI',
+				videoUrl: parsedData.normalizedVideoUrl || video.url,
+				platform: parsedData.platform || 'BILIBILI',
+				availableActions: parsedData.availableActions,
 				preferredAudioFormat: 'mp3',
 				allowFallback: true,
 			},
 			metadata: {
-				title: video.title,
-				duration: video.duration,
-				platform: 'BILIBILI',
+				title: parsedData.title || video.title,
+				duration: parsedData.duration || video.duration,
+				platform: parsedData.platform || 'BILIBILI',
+				coverUrl: parsedData.coverUrl,
 			},
 		})
 
@@ -335,13 +344,14 @@ async function handlePlayVideo(video) {
 			mode === 'stream'
 				? createStreamFallbackResolver({
 						getPayload: () => ({
-							videoUrl: video.url,
-							platform: 'BILIBILI',
+							videoUrl: parsedData.normalizedVideoUrl || video.url,
+							platform: parsedData.platform || 'BILIBILI',
 						}),
 						getMetadata: () => ({
-							title: video.title,
-							duration: video.duration,
-							platform: 'BILIBILI',
+							title: parsedData.title || video.title,
+							duration: parsedData.duration || video.duration,
+							platform: parsedData.platform || 'BILIBILI',
+							coverUrl: parsedData.coverUrl,
 						}),
 						playerStore,
 						toast,
@@ -352,7 +362,8 @@ async function handlePlayVideo(video) {
 				: null
 		)
 
-		const successMessage = mode === 'stream' ? `《${video.title}》音频流已接入，开始播放` : `《${video.title}》临时音频已准备完成，开始播放`
+		const displayTitle = parsedData.title || video.title
+		const successMessage = mode === 'stream' ? `《${displayTitle}》音频流已接入，开始播放` : `《${displayTitle}》临时音频已准备完成，开始播放`
 		toast.success(successMessage, 5000)
 	} catch (error) {
 		console.error('播放准备失败:', error)

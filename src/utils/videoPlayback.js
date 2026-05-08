@@ -25,7 +25,7 @@ export async function resolveVideoPlaybackTrack({ payload, metadata, onStreamRes
 		throw new Error('缺少视频链接或平台信息')
 	}
 
-	if (!canUseVideoStreamPlayback({ platform: payload.platform })) {
+	if (!canUseVideoStreamPlayback(payload)) {
 		const audioResult = await prepareAudio(buildPreparedAudioPayload(payload))
 		return {
 			track: adaptVideoToTrack(audioResult, metadata),

@@ -16,7 +16,8 @@ export function isBilibiliDirectStreamSupported(platform) {
 
 /**
  * 当前解析结果是否允许尝试新的流播放链路
- * 仅 B 站启用；后端是否声明 AUDIO_STREAM 作为增强信号，不作为硬性门槛。
+ * 若已拿到 parse 结果，则以后端返回的 AUDIO_STREAM 为准；
+ * 未经过 parse 的 B 站专用入口保留兼容逻辑。
  * @param {Object} parsedData
  * @returns {boolean}
  */
@@ -25,7 +26,11 @@ export function canUseVideoStreamPlayback(parsedData) {
 		return false
 	}
 
-	return true
+	if (!Array.isArray(parsedData?.availableActions)) {
+		return true
+	}
+
+	return parsedData.availableActions.includes('AUDIO_STREAM')
 }
 
 /**
